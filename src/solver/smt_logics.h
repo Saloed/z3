@@ -35,6 +35,7 @@ public:
     static bool logic_has_pb(symbol const& s);
     static bool logic_has_fd(symbol const& s) { return s == "QF_FD"; }
     static bool logic_has_datatype(symbol const& s);
+    static bool logic_has_function_call(symbol const& s);
 };
 
 

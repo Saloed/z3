@@ -30,6 +30,7 @@ z3_add_component(ast
     format.cpp
     fpa_decl_plugin.cpp
     func_decl_dependencies.cpp
+    function_call_decl_plugin.cpp
     has_free_vars.cpp
     macro_substitution.cpp
     num_occurs.cpp

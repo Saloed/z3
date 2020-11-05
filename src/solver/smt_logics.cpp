@@ -135,6 +135,10 @@ bool smt_logics::logic_has_array(symbol const & s) {
         s == "HORN";
 }
 
+bool smt_logics::logic_has_function_call(symbol const & s) {
+    return logic_is_all(s) || s == "HORN";
+}
+
 bool smt_logics::logic_has_seq(symbol const & s) {
     return s == "QF_BVRE" || s == "QF_S" || s == "QF_SLIA" || logic_is_all(s);
 }
