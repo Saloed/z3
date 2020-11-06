@@ -50,6 +50,18 @@ namespace smt {
         return true;
     }
 
+    theory_var theory_function_call::mk_var(enode *n) {
+        theory_var r = theory::mk_var(n);
+        VERIFY(r == static_cast<theory_var>(m_find.mk_var()));
+        SASSERT(r == static_cast<int>(m_var_data.size()));
+        m_var_data.push_back(alloc(var_data));
+        var_data *d = m_var_data[r];
+        d->m_is_function = is_function_call_sort(n);
+        d->m_is_function_call = is_function_call(n);
+        ctx.attach_th_var(n, this, r);
+        return r;
+    }
+
     bool theory_function_call::internalize_term(app *n) {
         if (ctx.e_internalized(n)) {
             return true;
@@ -61,11 +73,7 @@ namespace smt {
         if (!is_attached_to_var(arg0))
             mk_var(arg0);
 
-
         theory_var v_arg = arg0->get_th_var(get_id());
-
-        arg0->display_lbls(std::cout);
-        std::cout.flush();
 
         SASSERT(v_arg != null_theory_var);
         add_parent_function_call(v_arg, ctx.get_enode(n));
@@ -175,7 +183,7 @@ namespace smt {
     }
 
     bool theory_function_call::can_propagate() {
-        return true; // maybe todo
+        return !m_equality_todo.empty() || !m_extensionality_todo.empty();
     }
 
     void theory_function_call::propagate() {

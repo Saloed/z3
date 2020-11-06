@@ -98,5 +98,8 @@ namespace smt {
         void merge_eh(theory_var v1, theory_var v2, theory_var, theory_var);
 
         void after_merge_eh(theory_var r1, theory_var r2, theory_var v1, theory_var v2);
+
+    protected:
+        theory_var mk_var(enode *n) override;
     };
 }
