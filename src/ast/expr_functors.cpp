@@ -31,7 +31,7 @@ bool check_pred::operator()(expr* e) {
     }
     SASSERT(m_visited.is_marked(e));
     return m_pred_holds.is_marked(e);
-}        
+}
 
 void check_pred::visit(expr* e) {
     ptr_vector<expr> todo;
@@ -39,7 +39,7 @@ void check_pred::visit(expr* e) {
     while (!todo.empty()) {
         e = todo.back();
         if (m_pred(e)) {
-            m_pred_holds.mark(e, true);                
+            m_pred_holds.mark(e, true);
         }
         if (m_visited.is_marked(e)) {
             todo.pop_back();
@@ -85,7 +85,7 @@ void check_pred::visit(expr* e) {
             }
             break;
         }
-        case AST_VAR: 
+        case AST_VAR:
             todo.pop_back();
             m_visited.mark(e, true);
             break;
@@ -109,6 +109,21 @@ bool contains_app::operator()(unsigned size, expr* const* es) {
     return false;
 }
 
+
+// ------------
+// contains_expr
+
+
+bool contains_expr::operator()(unsigned size, expr *const *es) {
+    for (unsigned i = 0; i < size; ++i) {
+        if ((*this)(es[i])) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
 // -----------
 // map_proc
 
@@ -129,7 +144,7 @@ void map_proc::reconstruct(app* a) {
     }
     else {
         m_map.insert(a, a, nullptr);
-    }    
+    }
 }
 
 void map_proc::visit(quantifier* e) {

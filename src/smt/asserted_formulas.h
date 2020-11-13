@@ -40,7 +40,7 @@ Revision History:
 
 
 class asserted_formulas {
-    
+public:
     ast_manager &               m;
     smt_params &                m_smt_params;
     params_ref                  m_params;

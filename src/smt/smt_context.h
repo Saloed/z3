@@ -76,7 +76,7 @@ namespace smt {
         void set_progress_callback(progress_callback *callback);
 
 
-    protected:
+    public:
         ast_manager &               m;
         smt_params &                m_fparams;
         params_ref                  m_params;

@@ -123,13 +123,13 @@ void display_usage() {
     std::cout << "  module_name.param_name=value  for setting module parameters.\n";
     std::cout << "Use 'z3 -p' for the complete list of global and module parameters.\n";
 }
-   
+
 static void parse_cmd_line_args(int argc, char ** argv) {
     long timeout = 0;
     int i = 1;
     char * eq_pos = nullptr;
     while (i < argc) {
-        char * arg = argv[i];    
+        char * arg = argv[i];
 
         if (arg[0] == '-' && arg[1] == '-' && arg[2] == 0) {
             // Little hack used to read files with strange names such as -foo.smt2
@@ -149,8 +149,8 @@ static void parse_cmd_line_args(int argc, char ** argv) {
             }
             break;
         }
-        
-        if (arg[0] == '-' 
+
+        if (arg[0] == '-'
 #ifdef _WINDOWS
             || arg[0] == '/'
 #endif
@@ -209,14 +209,14 @@ static void parse_cmd_line_args(int argc, char ** argv) {
                 g_input_kind = IN_Z3_LOG;
             }
             else if (strcmp(opt_name, "st") == 0) {
-                g_display_statistics = true; 
+                g_display_statistics = true;
                 gparams::set("stats", "true");
             }
             else if (strcmp(opt_name, "model") == 0) {
                 g_display_model = true;
             }
             else if (strcmp(opt_name, "ist") == 0) {
-                g_display_istatistics = true; 
+                g_display_istatistics = true;
             }
             else if (strcmp(opt_name, "v") == 0) {
                 if (!opt_arg)
@@ -299,7 +299,7 @@ static void parse_cmd_line_args(int argc, char ** argv) {
         else if (argv[i][0] != '"' && (eq_pos = strchr(argv[i], '='))) {
             char * key   = argv[i];
             *eq_pos      = 0;
-            char * value = eq_pos+1; 
+            char * value = eq_pos+1;
             gparams::set(key, value);
         }
         else {
@@ -307,9 +307,9 @@ static void parse_cmd_line_args(int argc, char ** argv) {
                 g_input_kind = IN_DRAT;
                 g_drat_input_file = arg;
             }
-            else if (g_input_file) 
+            else if (g_input_file)
                 warning_msg("input file was already specified.");
-            else 
+            else
                 g_input_file = arg;
         }
         i++;
@@ -322,6 +322,9 @@ static void parse_cmd_line_args(int argc, char ** argv) {
 
 int STD_CALL main(int argc, char ** argv) {
      try{
+         enable_trace("mk_clause");
+         enable_trace("mk_th_axiom");
+
         unsigned return_value = 0;
         memory::initialize(0);
         memory::exit_when_out_of_memory(true, "ERROR: out of memory");
@@ -334,7 +337,7 @@ int STD_CALL main(int argc, char ** argv) {
         if (!g_input_file && !g_standard_input) {
             error("input file was not specified.");
         }
-        
+
         if (g_input_kind == IN_UNSPECIFIED) {
             g_input_kind = IN_SMTLIB_2;
             char const * ext = get_extension(g_input_file);

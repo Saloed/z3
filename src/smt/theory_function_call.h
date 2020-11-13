@@ -7,6 +7,7 @@
 #include "smt/smt_theory.h"
 #include "ast/function_call_decl_plugin.h"
 #include "util/union_find.h"
+#include "smt_clause.h"
 
 namespace smt {
     class theory_function_call : public theory {
@@ -25,9 +26,19 @@ namespace smt {
             var_data() : m_is_function(false), m_is_function_call(false) {}
         };
 
+        struct call_info {
+            ptr_vector<expr> out_args;
+            ptr_vector<expr> in_args;
+            expr *call;
+
+            call_info() : call(nullptr) {}
+        };
+
         ptr_vector<var_data> m_var_data;
         enode_pair_vector m_extensionality_todo;
         enode_pair_vector m_equality_todo;
+        ptr_vector<app> m_pending_calls;
+        vector<call_info> registered_calls;
 
         th_trail_stack &get_trail_stack() { return m_trail_stack; }
 
@@ -99,7 +110,13 @@ namespace smt {
 
         void after_merge_eh(theory_var r1, theory_var r2, theory_var v1, theory_var v2);
 
+        bool build_models() const override;
+
     protected:
         theory_var mk_var(enode *n) override;
+
+        void analyze_lemmas(const ptr_vector<smt::clause> &lemmas, const expr *e);
+
+        bool expr_contains_expr(expr *first, expr *second);
     };
 }

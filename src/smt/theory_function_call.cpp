@@ -2,10 +2,16 @@
 // Created by napst on 05.11.2020.
 //
 
+#include <ast/expr_functors.h>
 #include "theory_function_call.h"
 #include "smt/smt_context.h"
 
 namespace smt {
+
+
+#define PP_EXPR(expr) DEBUG_CODE(smt2_pp_environment_dbg env(m); ast_smt2_pp(std::cout, expr, env); std::cout << std::endl;)
+
+
     theory_function_call::theory_function_call(context &ctx) :
             theory(ctx, ctx.get_manager().mk_family_id("function_call")),
             m_find(*this),
@@ -42,6 +48,17 @@ namespace smt {
         if (!is_attached_to_var(e))
             mk_var(e);
 
+        expr *last_arg = n->get_arg(num_args - 1);
+        enode *last_arg_e = ctx.get_enode(last_arg);
+        if (!is_attached_to_var(last_arg_e))
+            mk_var(last_arg_e);
+
+        call_info call;
+        call.call = n;
+        call.in_args.push_back(n->get_arg(1));
+        call.out_args.push_back(n->get_arg(2));
+        registered_calls.push_back(call);
+
         if (m.is_bool(n)) {
             bool_var bv = ctx.mk_bool_var(n);
             ctx.set_var_theory(bv, get_id());
@@ -66,6 +83,7 @@ namespace smt {
         if (ctx.e_internalized(n)) {
             return true;
         }
+
         if (!internalize_term_core(n)) {
             return true;
         }
@@ -90,6 +108,7 @@ namespace smt {
 
 
     void theory_function_call::new_eq_eh(theory_var v1, theory_var v2) {
+        std::cout << "New eq" << std::endl;
         m_find.merge(v1, v2);
         enode *n1 = get_enode(v1), *n2 = get_enode(v2);
         assert_congruent(n1, n2);
@@ -108,6 +127,7 @@ namespace smt {
 
 
     void theory_function_call::new_diseq_eh(theory_var v1, theory_var v2) {
+        std::cout << "New diseq" << std::endl;
         v1 = find(v1);
         v2 = find(v2);
         var_data *d1 = m_var_data[v1];
@@ -135,6 +155,12 @@ namespace smt {
     }
 
     void theory_function_call::relevant_eh(app *n) {
+        if (!is_function_call(n)) return;
+
+        std::cout << "relevant_eh" << std::endl;
+        PP_EXPR(n);
+        m_pending_calls.push_back(n);
+
         if (!ctx.e_internalized(n)) ctx.internalize(n, false);
         enode *arg = ctx.get_enode(n->get_arg(0));
         theory_var v_arg = arg->get_th_var(get_id());
@@ -174,8 +200,8 @@ namespace smt {
     }
 
     final_check_status theory_function_call::final_check_eh() {
-        m_final_check_idx++;
-        return FC_DONE; // todo
+        if (m_pending_calls.empty()) return FC_DONE;
+        return FC_CONTINUE;
     }
 
     bool theory_function_call::is_shared(theory_var v) const {
@@ -183,12 +209,97 @@ namespace smt {
     }
 
     bool theory_function_call::can_propagate() {
-        return !m_equality_todo.empty() || !m_extensionality_todo.empty();
+        return !m_pending_calls.empty();
+    }
+
+    bool theory_function_call::expr_contains_expr(expr *first, expr *second) {
+        return contains_expr(m, second)(first);
     }
 
     void theory_function_call::propagate() {
-        int a = 17;
-        // todo: main logic
+        std::cout << "Propagate" << std::endl;
+
+        ptr_vector<clause> lemmas = ctx.get_lemmas();
+        vector<expr_ref> expr_to_analyze;
+
+        for (auto &&call : registered_calls) {
+            for (expr *out_arg : call.out_args) {
+                contains_expr arg_matcher(m, out_arg);
+                for (auto &&lemma : lemmas) {
+                    for (unsigned i = 0; i < lemma->get_num_literals(); i++) {
+                        literal lemma_literal = lemma->get_literal(i);
+                        expr_ref literal_expr = ctx.literal2expr(lemma_literal);
+                        if (arg_matcher(literal_expr)) {
+                            expr_to_analyze.push_back(literal_expr);
+                        }
+                    }
+                }
+            }
+        }
+
+
+        for (auto &&expr: expr_to_analyze) {
+            PP_EXPR(expr);
+        }
+
+
+//        std::cout << "Lemmas" << std::endl;
+//        ctx.display_clauses(std::cout, lemmas);
+//        for (auto &&e : lemmas) {
+//            ctx.display_clause_smt2(std::cout, *e) << std::endl;
+//        }
+//        std::cout << "Asserted" << std::endl;
+//        for (auto &&e : ctx.m_asserted_formulas.m_formulas) {
+//            PP_EXPR(e.get_fml());
+//            PP_EXPR(e.get_proof());
+//        }
+
+
+//        for (auto &&call : registered_calls) {
+//            PP_EXPR(call.call);
+//            analyze_lemmas(lemmas, call.out_args[0]);
+////
+////            arith_util _arith(m);
+////            auto &&some_dummy_arg_value = _arith.mk_add(call->get_arg(2), _arith.mk_int(11));
+////            auto &&some_dummy_arg_value = _arith.mk_int(15);
+////            auto &&precondition = _arith.mk_eq(in_arg, some_dummy_arg_value);
+//
+////            auto &&approximation = m.mk_and(precondition, call);
+////            auto &&approximation = m.mk_implies(precondition, call);
+////            auto &&approximation = m.mk_or(m.mk_not(precondition), call);
+//
+////            app_ref approx_expr(approximation, get_manager());
+////            ctx.internalize(approx_expr, true);
+////            literal approx_literal = ctx.get_literal(approx_expr);
+////            literal approx_literal = mk_eq(precondition, call, true);
+////            literal ls[1] = {approx_literal};
+////            ctx.mk_th_lemma(get_id(), 1, ls);
+////            ctx.mk_th_axiom(get_id(), 1, ls);
+//        }
+        m_pending_calls.clear();
+    }
+
+    void theory_function_call::analyze_lemmas(const ptr_vector<clause> &lemmas, const expr *e) {
+        std::cout << "Analyze" << std::endl;
+        if (lemmas.empty()) return;
+        for (auto &&lemma : lemmas) {
+            ctx.display_clause_smt2(std::cout, *lemma) << std::endl;
+            ptr_vector<expr> atoms;
+            vector<literal> literals;
+            std::cout << "Atoms" << std::endl;
+            for (auto i = 0; i < lemma->get_num_atoms(); i++) {
+                PP_EXPR(lemma->get_atom(i));
+                atoms.push_back(lemma->get_atom(i));
+            }
+            std::cout << "Literals" << std::endl;
+            for (auto i = 0; i < lemma->get_num_literals(); i++) {
+                expr *lit = ctx.literal2expr(lemma->get_literal(i));
+
+
+                ctx.display_literal_smt2(std::cout, lemma->get_literal(i)) << std::endl;
+                literals.push_back(lemma->get_literal(i));
+            }
+        }
     }
 
     void theory_function_call::merge_eh(theory_var v1, theory_var v2, theory_var, theory_var) {
@@ -206,5 +317,10 @@ namespace smt {
     void theory_function_call::unmerge_eh(theory_var v1, theory_var v2) {
         // do nothing
     }
+
+    bool theory_function_call::build_models() const {
+        return false;
+    }
+
 
 }
