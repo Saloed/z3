@@ -322,9 +322,6 @@ static void parse_cmd_line_args(int argc, char ** argv) {
 
 int STD_CALL main(int argc, char ** argv) {
      try{
-         enable_trace("mk_clause");
-         enable_trace("mk_th_axiom");
-
         unsigned return_value = 0;
         memory::initialize(0);
         memory::exit_when_out_of_memory(true, "ERROR: out of memory");

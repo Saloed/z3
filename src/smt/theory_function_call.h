@@ -16,15 +16,6 @@ namespace smt {
         typedef union_find<theory_function_call> th_union_find;
         th_union_find m_find;
         th_trail_stack m_trail_stack;
-        unsigned m_final_check_idx;
-
-        struct var_data {
-            ptr_vector<enode> m_parent_function_calls;
-            bool m_is_function;
-            bool m_is_function_call;
-
-            var_data() : m_is_function(false), m_is_function_call(false) {}
-        };
 
         struct call_info {
             ptr_vector<expr> out_args;
@@ -34,11 +25,8 @@ namespace smt {
             call_info() : call(nullptr) {}
         };
 
-        ptr_vector<var_data> m_var_data;
-        enode_pair_vector m_extensionality_todo;
-        enode_pair_vector m_equality_todo;
-        ptr_vector<app> m_pending_calls;
         vector<call_info> registered_calls;
+        unsigned m_num_pending_queries;
 
         th_trail_stack &get_trail_stack() { return m_trail_stack; }
 
@@ -94,16 +82,6 @@ namespace smt {
 
         bool internalize_term_core(app *n);
 
-        void add_parent_function_call(theory_var v, enode *s);
-
-        void instantiate_extensionality(enode *a1, enode *a2);
-
-        bool assert_extensionality(enode *n1, enode *n2);
-
-        void assert_congruent(enode *a1, enode *a2);
-
-        void reset_queues();
-
         void unmerge_eh(theory_var v1, theory_var v2);
 
         void merge_eh(theory_var v1, theory_var v2, theory_var, theory_var);
@@ -112,11 +90,8 @@ namespace smt {
 
         bool build_models() const override;
 
-    protected:
         theory_var mk_var(enode *n) override;
 
-        void analyze_lemmas(const ptr_vector<smt::clause> &lemmas, const expr *e);
-
-        bool expr_contains_expr(expr *first, expr *second);
+        void analyze_lemma(expr_ref &lemma, call_info &call, expr *argument);
     };
 }
