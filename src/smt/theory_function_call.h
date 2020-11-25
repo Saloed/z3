@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <unordered_set>
 #include "smt/smt_theory.h"
 #include "ast/function_call_decl_plugin.h"
 #include "util/union_find.h"
@@ -21,12 +22,17 @@ namespace smt {
             ptr_vector<expr> out_args;
             ptr_vector<expr> in_args;
             expr *call;
+            bool checked_lemmas[2] = {false, false};
+            bool is_asserted = false;
 
             call_info() : call(nullptr) {}
         };
 
         vector<call_info> registered_calls;
         unsigned m_num_pending_queries;
+        unsigned m_propagate_idx = 0;
+        std::unordered_set<std::string> aux_history;
+        std::unordered_set<std::string> lemma_history;
 
         th_trail_stack &get_trail_stack() { return m_trail_stack; }
 
@@ -93,5 +99,19 @@ namespace smt {
         theory_var mk_var(enode *n) override;
 
         void analyze_lemma(expr_ref &lemma, call_info &call, expr *argument);
+
+        model_value_proc *mk_value(enode *n, model_generator &mg) override;
+
+        void mk_th_axiom(literal& lit);
+
+        void replace_literal(literal &lit, call_info &call, expr *argument);
+
+        void analyze_all_exprs();
+
+        ptr_vector<expr> least_logical_subexpr_containing_expr(expr *e, expr *target);
+
+        expr *find_precondition(expr *expression, call_info &call, expr *argument);
+
+        expr *replace_expr(expr *original, expr *from, expr *to);
     };
 }

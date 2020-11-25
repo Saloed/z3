@@ -328,6 +328,11 @@ int STD_CALL main(int argc, char ** argv) {
         parse_cmd_line_args(argc, argv);
         env_params::updt_params();
 
+//        enable_trace("mk_clause");
+//        enable_trace("assign_core");
+        enable_trace("xxx");
+        enable_trace("unit_bug");
+
         if (g_input_file && g_standard_input) {
             error("using standard input to read formula.");
         }
