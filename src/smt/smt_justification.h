@@ -98,8 +98,8 @@ namespace smt {
     };
 
     class justification_proof_wrapper : public justification {
-        proof * m_proof;
     public:
+        proof * m_proof;
         justification_proof_wrapper(context & ctx, proof * pr, bool in_region = true);
 
         bool has_del_eh() const override {

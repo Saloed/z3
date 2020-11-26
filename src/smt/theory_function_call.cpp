@@ -208,28 +208,87 @@ namespace smt {
         dump_clauses(log_index, file_name, new_aux, delete_aux);
     }
 
-    void print_bv2expr(ptr_vector<expr> &bv2e, ast_manager &manager) {
+    std::ostream &print_b_data(std::ostream &out, unsigned var, context &ctx, ast_manager &m) {
+        b_justification js = ctx.m_bdata[var].justification();
+        out << js.get_kind() << " | ";
+        switch (js.get_kind()) {
+            case b_justification::CLAUSE: {
+                clause *cls = js.get_clause();
+                if (cls != nullptr) {
+                    ctx.display_clause_smt2(out, *cls) << std::endl;
+                } else {
+                    out << "null" << std::endl;
+                }
+                break;
+            }
+            case b_justification::BIN_CLAUSE: {
+                ctx.display_literal_smt2(out, js.get_literal()) << std::endl;
+                break;
+            }
+            case b_justification::AXIOM: {
+                break;
+            }
+            case b_justification::JUSTIFICATION: {
+                justification *j = js.get_justification();
+                out << j << " " << j->get_name() << "\n";
+                if (strcmp(j->get_name(), "proof-wrapper") == 0) {
+                    auto *pw = dynamic_cast<smt::justification_proof_wrapper *>(j);
+                    out << mk_pp(pw->m_proof, m) << "\n";
+                }
+                break;
+            }
+        }
+        return out;
+    }
+
+    void print_bv2expr(ptr_vector<expr> &bv2e, ast_manager &manager, context &ctx) {
         for (unsigned i = 0; i < bv2e.size(); ++i) {
             expr *e = bv2e[i];
             std::cout << i << ": " << mk_pp(e, manager) << "\n";
+            print_b_data(std::cout, i, ctx, manager) << "\n";
         }
         std::cout << std::flush;
     }
 
     void theory_function_call::propagate() {
         ptr_vector<clause> lemmas = ctx.get_lemmas();
-        print_bv2expr(ctx.m_bool_var2expr, m);
+        print_bv2expr(ctx.m_bool_var2expr, m, ctx);
 
 //        log_clauses(ctx, ctx.m_aux_clauses, aux_history, m_propagate_idx, ".z3-aux_trace");
 //        log_clauses(ctx, lemmas, lemma_history, m_propagate_idx, ".z3-lemma_trace");
 
         std::cout << "Propagate " << m_propagate_idx << std::endl;
         TRACE("xxx", tout << m_propagate_idx;);
+
+        ctx.m_conflict_resolution->reset();
+
         if (m_propagate_idx == 5) {
 //            std::cout << "bv2e:\n";
 //            ctx.display_bool_var_defs(std::cout);
 //            std::cout << "\nEnodes:\n";
 //            ctx.display_enode_defs(std::cout);
+//            std::cout << "asserted formulas:\n";
+//            ctx.display_asserted_formulas(std::cout);
+//            std::cout << "\nbinary clauses:\n";
+//            ctx.display_binary_clauses(std::cout);
+//            std::cout << "\nauxiliary clauses:\n";
+//            ctx.display_clauses(std::cout, ctx.m_aux_clauses);
+//            std::cout << "\nlemmas:\n";
+//            ctx.display_clauses(std::cout, ctx.m_lemmas);
+//            std::cout << "\nassignment:\n";
+//            ctx.display_assignment(std::cout);
+//            std::cout << "\neqc:\n";
+//            ctx.display_eqc(std::cout);
+//            std::cout << "\ncg table:\n";
+//            ctx.m_cg_table.display_compact(std::cout);
+//            std::cout << "\nxase split queue:\n";
+//            ctx.m_case_split_queue->display(std::cout);
+//            std::cout << "\nbool var map:\n";
+//            ctx.display_expr_bool_var_map(std::cout);
+//            std::cout << "\nenode map:\n";
+//            ctx.display_app_enode_map(std::cout);
+//            std::cout << "\nrelevant exprs:\n";
+//            ctx.display_relevant_exprs(std::cout);
 //            ctx.display(std::cout);
             std::cout << std::flush;
         }
@@ -321,12 +380,17 @@ namespace smt {
                       << std::endl;
             expr *precondition = find_precondition(info.relevant_expr, info.call, info.call.out_args[info.arg_idx]);
             if (precondition == nullptr) continue;
+            ctx.internalize(precondition, true);
+
+//            m.inc_ref(precondition);
+//            *info.relevant_expr = *precondition;
+
             expr *original_expr = ctx.m_bool_var2expr[info.bv];
             expr *replacement = replace_expr(original_expr, info.relevant_expr, precondition);
             ctx.internalize(replacement, true);
             ctx.mark_as_relevant(replacement);
             m.inc_ref(replacement);
-            *original_expr = *replacement;
+//            *original_expr = *replacement;
             ctx.m_bool_var2expr[info.bv] = replacement;
         }
 
