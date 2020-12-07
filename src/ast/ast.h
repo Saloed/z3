@@ -2208,6 +2208,7 @@ public:
     app * mk_or(ref_buffer<expr, ast_manager> const& args) { return mk_or(args.size(), args.c_ptr()); }
     app * mk_or(ptr_buffer<expr> const& args) { return mk_or(args.size(), args.c_ptr()); }
     app * mk_implies(expr * arg1, expr * arg2) { return mk_app(m_basic_family_id, OP_IMPLIES, arg1, arg2); }
+    app * mk_implies_simplified(expr * arg1, expr * arg2) { return mk_or(mk_not(arg1), arg2); }
     app * mk_not(expr * n) { return mk_app(m_basic_family_id, OP_NOT, n); }
     app * mk_distinct(unsigned num_args, expr * const * args);
     app * mk_distinct_expanded(unsigned num_args, expr * const * args);

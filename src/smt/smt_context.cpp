@@ -269,11 +269,18 @@ namespace smt {
     }
 
     void context::set_justification(bool_var v, bool_var_data& d, b_justification const& j) {
+//        TRACE("xxx", tout << "Set justification for " << v << "\n"; display_justification(tout, j) << "\n";);
         SASSERT(validate_justification(v, d, j));
         d.set_justification(j);
     }
 
     void context::assign_core(literal l, b_justification j, bool decision) {
+//        TRACE("xxx", tout << "Assign core " << l.var() << "\nJustification:\n"; display_justification(tout, j) << std::endl;);
+//        if (l.var() == 12) {
+//            int a = 3;
+//        }
+
+
         m_assigned_literals.push_back(l);
         m_assignment[l.index()]    = l_true;
         m_assignment[(~l).index()] = l_false;
@@ -305,6 +312,7 @@ namespace smt {
     }
 
     bool context::bcp() {
+//        TRACE("xxx", tout << "watches on bcp" << std::endl; display_watches_smt2(tout););
         SASSERT(!inconsistent());
         while (m_qhead < m_assigned_literals.size()) {
             if (get_cancel_flag()) {

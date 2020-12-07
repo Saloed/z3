@@ -5,14 +5,12 @@
 #include <ast/expr_functors.h>
 #include <ast/rewriter/expr_replacer.h>
 #include <unordered_map>
+#include <functional>
 #include "theory_function_call.h"
 #include "smt/smt_context.h"
 #include "smt_model_generator.h"
 
 namespace smt {
-
-
-#define PP_EXPR(expr) DEBUG_CODE(smt2_pp_environment_dbg env(m); ast_smt2_pp(std::cout, expr, env); std::cout << std::endl;)
 
 
     theory_function_call::theory_function_call(context &ctx) :
@@ -107,8 +105,7 @@ namespace smt {
 
     void theory_function_call::relevant_eh(app *n) {
         if (!is_function_call(n)) return;
-        std::cout << "relevant_eh" << std::endl;
-        PP_EXPR(n);
+        std::cout << "relevant_eh" << "\n" << mk_pp(n, m) << std::endl;
         m_num_pending_queries++;
         if (!ctx.e_internalized(n)) ctx.internalize(n, false);
     }
@@ -208,59 +205,89 @@ namespace smt {
         dump_clauses(log_index, file_name, new_aux, delete_aux);
     }
 
-    std::ostream &print_b_data(std::ostream &out, unsigned var, context &ctx, ast_manager &m) {
-        b_justification js = ctx.m_bdata[var].justification();
-        out << js.get_kind() << " | ";
-        switch (js.get_kind()) {
-            case b_justification::CLAUSE: {
-                clause *cls = js.get_clause();
-                if (cls != nullptr) {
-                    ctx.display_clause_smt2(out, *cls) << std::endl;
-                } else {
-                    out << "null" << std::endl;
-                }
-                break;
-            }
-            case b_justification::BIN_CLAUSE: {
-                ctx.display_literal_smt2(out, js.get_literal()) << std::endl;
-                break;
-            }
-            case b_justification::AXIOM: {
-                break;
-            }
-            case b_justification::JUSTIFICATION: {
-                justification *j = js.get_justification();
-                out << j << " " << j->get_name() << "\n";
-                if (strcmp(j->get_name(), "proof-wrapper") == 0) {
-                    auto *pw = dynamic_cast<smt::justification_proof_wrapper *>(j);
-                    out << mk_pp(pw->m_proof, m) << "\n";
-                }
-                break;
+    template<typename T>
+    void ptr_vec_diff_printer(
+            std::ostream &out,
+            std::unordered_map<unsigned int, std::string> &history,
+            ptr_vector<T> &vec,
+            std::function<void(std::ostream &, T *, unsigned)> element_printer) {
+
+        vector<std::string> added;
+        vector<std::string> changed;
+
+        for (unsigned i = 0; i < vec.size(); ++i) {
+            T *e = vec[i];
+            std::stringstream ss;
+            element_printer(ss, e, i);
+            std::string element_repr = ss.str();
+
+            auto &&it = history.find(i);
+            if (it == history.end()) {
+                added.push_back(element_repr);
+                history.emplace(i, element_repr);
+            } else if (it->second != element_repr) {
+                changed.push_back(element_repr);
+                history.erase(i);
+                history.emplace(i, element_repr);
             }
         }
-        return out;
+
+        out << "New:\n";
+        for (auto &it: added) {
+            out << it << "\n";
+        }
+        out << "Changed:\n";
+        for (auto &it: changed) {
+            out << it << "\n";
+        }
     }
 
-    void print_bv2expr(ptr_vector<expr> &bv2e, ast_manager &manager, context &ctx) {
+    void print_expr(std::ostream &out, expr *e, unsigned i, context &ctx) {
+        out << i << ": " << mk_pp(e, ctx.get_manager()) << "\n";
+        b_justification js = ctx.m_bdata[i].justification();
+        ctx.display_justification(out, js) << "\n";
+    }
+
+    void print_bv2expr(std::ostream &out, ptr_vector<expr> &bv2e, context &ctx) {
         for (unsigned i = 0; i < bv2e.size(); ++i) {
             expr *e = bv2e[i];
-            std::cout << i << ": " << mk_pp(e, manager) << "\n";
-            print_b_data(std::cout, i, ctx, manager) << "\n";
+            print_expr(out, e, i, ctx);
         }
-        std::cout << std::flush;
+    }
+
+    void display_justifications(std::ostream &out, context &ctx) {
+        for (unsigned i = 0; i < ctx.m_justifications.size(); i++) {
+            out << "Justification: " << i << "\n";
+            ctx.display_justification(out, ctx.m_justifications[i]);
+            out << "\n";
+        }
     }
 
     void theory_function_call::propagate() {
         ptr_vector<clause> lemmas = ctx.get_lemmas();
-        print_bv2expr(ctx.m_bool_var2expr, m, ctx);
 
+//        std::ofstream bv_trace(".z3_bv2expr", std::ios_base::out | std::ios_base::app);
+//        std::ofstream w_trace(".z3_watches", std::ios_base::out | std::ios_base::app);
+//        bv_trace << "Propagate " << m_propagate_idx << std::endl;
+//        w_trace << "Propagate " << m_propagate_idx << std::endl;
+//        print_bv2expr(bv_trace, ctx.m_bool_var2expr, m, ctx);
+//        ctx.display_watches_smt2(w_trace);
 //        log_clauses(ctx, ctx.m_aux_clauses, aux_history, m_propagate_idx, ".z3-aux_trace");
 //        log_clauses(ctx, lemmas, lemma_history, m_propagate_idx, ".z3-lemma_trace");
 
         std::cout << "Propagate " << m_propagate_idx << std::endl;
-        TRACE("xxx", tout << m_propagate_idx;);
+        TRACE("xxx", tout << "Propagate: " << m_propagate_idx << "\n";);
+//        TRACE("xxx", tout << "Justifications:\n"; display_justifications(tout, ctx););
+//        TRACE("xxx", tout << "watches on start" << std::endl; ctx.display_watches_smt2(tout););
 
-        ctx.m_conflict_resolution->reset();
+        auto &&bv2Expr_printer = [&](std::ostream &out, expr *e, unsigned i) {
+            return print_expr(out, e, i, ctx);
+        };
+        TRACE("xxx", ptr_vec_diff_printer<expr>(tout, bv2Expr_history, ctx.m_bool_var2expr, bv2Expr_printer););
+
+        //        TRACE("xxx", print_bv2expr(tout, ctx.m_bool_var2expr,  ctx););
+
+//        ctx.m_conflict_resolution->reset();
 
         if (m_propagate_idx == 5) {
 //            std::cout << "bv2e:\n";
@@ -299,103 +326,231 @@ namespace smt {
 //        ctx_trace.close();
 
 
-
-//        ptr_vector<clause> lemmas = ctx.m_aux_clauses;
-
-        vector<expr_ref> lemmas_to_analyze;
-        vector<call_info> calls_to_analyze;
-        ptr_vector<expr> arg_to_analyze;
-        vector<literal> relevant_literals;
-
-//        std::cout << "Current lemmas:" << std::endl;
-//        for (auto &&lemma: lemmas) {
-//            ctx.display_clause_smt2(std::cout, *lemma) << std::endl;
-//        }
-//
-
-        analyze_all_exprs();
-
-//        for (auto &&call : registered_calls) {
-//            for (expr *out_arg : call.out_args) {
-//                contains_expr arg_matcher(m, out_arg);
-//                for (auto &&lemma : lemmas) {
-//                    for (unsigned i = 0; i < lemma->get_num_literals(); i++) {
-//                        literal lemma_literal = lemma->get_literal(i);
-//                        expr_ref literal_expr = ctx.literal2expr(lemma_literal);
-//                        if (arg_matcher(literal_expr)) {
-//                            relevant_literals.push_back(lemma_literal);
-//                            lemmas_to_analyze.push_back(literal_expr);
-//                            calls_to_analyze.push_back(call);
-//                            arg_to_analyze.push_back(out_arg);
-//                        }
-//                    }
-//                }
-//            }
-//            if (!call.is_asserted) {
-//                literal call_literal = mk_literal(call.call);
-//                mk_th_axiom(call_literal);
-//                call.is_asserted = true;
-//            }
-//        }
-
-//        for (unsigned i = 0; i < lemmas_to_analyze.size(); ++i) {
-//            analyze_lemma(lemmas_to_analyze[i], calls_to_analyze[i], arg_to_analyze[i]);
-//        }
-
-        for (unsigned i = 0; i < relevant_literals.size(); ++i) {
-//            replace_literal(relevant_literals[i], calls_to_analyze[i], arg_to_analyze[i]);
-        }
+//        analyze_all_exprs_via_replace();
+        analyze_all_exprs_via_axiom();
 
         m_num_pending_queries = 0;
     }
 
-    struct expr_info {
-        unsigned bv;
+
+    proof *get_proof_if_available(justification *js) {
+        if (js == nullptr) return nullptr;
+        if (strcmp(js->get_name(), "proof-wrapper") != 0) return nullptr;
+        auto *pw = dynamic_cast<smt::justification_proof_wrapper *>(js);
+        return pw->m_proof;
+    }
+
+    enum replace_expr_info_type {
+        BV_EXPR, JUSTIFICATION
+    };
+
+    struct replace_expr_info {
+        replace_expr_info_type type;
+        unsigned idx;
         unsigned arg_idx;
-        expr *relevant_expr;
+        ptr_vector<expr> relevant_expr;
         theory_function_call::call_info call;
     };
 
-    void theory_function_call::analyze_all_exprs() {
-        vector<expr_info> relevant_exprs;
+    void theory_function_call::analyze_all_exprs_via_replace() {
+        ctx.m_conflict_resolution->reset();
+
+        vector<replace_expr_info> relevant_exprs;
         for (auto &&call : registered_calls) {
             for (unsigned ai = 0; ai < call.out_args.size(); ai++) {
                 for (unsigned bv = 0; bv < ctx.m_bool_var2expr.size(); ++bv) {
                     expr *e = ctx.m_bool_var2expr[bv];
                     if (e == nullptr) continue;
                     ptr_vector<expr> sub = least_logical_subexpr_containing_expr(e, call.out_args[ai]);
-                    for (expr *sub_expr: sub) {
-                        expr_info info{bv, ai, sub_expr, call};
-                        relevant_exprs.push_back(info);
-                    }
+                    replace_expr_info info{BV_EXPR, bv, ai, sub, call};
+                    relevant_exprs.push_back(info);
+                }
+                for (unsigned js_idx = 0; js_idx < ctx.m_justifications.size(); ++js_idx) {
+                    justification *js = ctx.m_justifications[js_idx];
+                    proof *js_proof = get_proof_if_available(js);
+                    if (js_proof == nullptr) continue;
+                    ptr_vector<expr> sub = least_logical_subexpr_containing_expr(js_proof, call.out_args[ai]);
+                    replace_expr_info info{JUSTIFICATION, js_idx, ai, sub, call};
+                    relevant_exprs.push_back(info);
                 }
             }
         }
 
-        for (unsigned i = 0; i < relevant_exprs.size(); i++) {
-            expr_info info = relevant_exprs[i];
-            std::cout << i
-                      << " { " << mk_pp(ctx.bool_var2expr(info.bv), m) << " } "
-                      << mk_pp(info.relevant_expr, m)
-                      << std::endl;
-            expr *precondition = find_precondition(info.relevant_expr, info.call, info.call.out_args[info.arg_idx]);
-            if (precondition == nullptr) continue;
-            ctx.internalize(precondition, true);
+        for (auto &&info : relevant_exprs) {
+            if (info.type == BV_EXPR) {
+                if (visited_expr.find(info.idx) != visited_expr.end()) {
+                    continue;
+                }
+                visited_expr.emplace(info.idx);
 
-//            m.inc_ref(precondition);
-//            *info.relevant_expr = *precondition;
+                expr *original_expr = ctx.bool_var2expr(info.idx);
 
-            expr *original_expr = ctx.m_bool_var2expr[info.bv];
-            expr *replacement = replace_expr(original_expr, info.relevant_expr, precondition);
-            ctx.internalize(replacement, true);
-            ctx.mark_as_relevant(replacement);
-            m.inc_ref(replacement);
-//            *original_expr = *replacement;
-            ctx.m_bool_var2expr[info.bv] = replacement;
+                bool has_precondition = false;
+                expr *replacement = original_expr;
+                for (auto *sub: info.relevant_expr) {
+                    expr *precondition = find_precondition(sub, info.call, info.call.out_args[info.arg_idx]);
+                    if (precondition == nullptr) continue;
+                    has_precondition = true;
+                    replacement = replace_expr(replacement, sub, precondition);
+                }
+                if (!has_precondition) continue;
+
+                m.inc_ref(replacement);
+                ctx.internalize(replacement, is_quantifier(replacement));
+
+                ctx.m_bool_var2expr[info.idx] = replacement;
+            }
+
+            if (info.type == JUSTIFICATION) {
+                justification *js = ctx.m_justifications[info.idx];
+                if (visited_js.find(js) != visited_js.end()) {
+                    continue;
+                }
+                visited_js.emplace(js);
+                proof *original_expr = get_proof_if_available(js);
+                if (original_expr == nullptr) continue;
+
+                bool has_precondition = false;
+                expr *replacement = original_expr;
+                for (auto *sub: info.relevant_expr) {
+                    expr *precondition = find_precondition(sub, info.call, info.call.out_args[info.arg_idx]);
+                    if (precondition == nullptr) continue;
+                    has_precondition = true;
+                    replacement = replace_expr(replacement, sub, precondition);
+                }
+                if (!has_precondition) continue;
+
+                m.inc_ref(replacement);
+//                ctx.internalize(replacement, is_quantifier(replacement));
+
+                proof *replacement_proof = reinterpret_cast<proof *>(replacement);
+                auto *js_casted = dynamic_cast<justification_proof_wrapper *>(js);
+                js_casted->m_proof = replacement_proof;
+            }
         }
 
     }
 
+    struct axiom_expr_info {
+        ptr_vector<expr> exprs;
+        unsigned arg_idx;
+        theory_function_call::call_info call;
+    };
+
+    void theory_function_call::analyze_all_exprs_via_axiom() {
+
+        vector<axiom_expr_info> relevant_exprs;
+        for (auto &&call : registered_calls) {
+            for (unsigned ai = 0; ai < call.out_args.size(); ai++) {
+                ptr_vector<expr> to_analyze;
+                for (unsigned bv = 0; bv < ctx.m_bool_var2expr.size(); ++bv) {
+                    if (visited_expr.find(bv) != visited_expr.end()) {
+                        continue;
+                    }
+                    visited_expr.emplace(bv);
+                    expr *e = ctx.m_bool_var2expr[bv];
+                    if (e == nullptr) continue;
+                    to_analyze.push_back(e);
+                }
+                for (unsigned js_idx = 0; js_idx < ctx.m_justifications.size(); ++js_idx) {
+                    justification *js = ctx.m_justifications[js_idx];
+                    if (visited_js.find(js) != visited_js.end()) {
+                        continue;
+                    }
+                    visited_js.emplace(js);
+                    proof *js_proof = get_proof_if_available(js);
+                    if (js_proof == nullptr) continue;
+                    to_analyze.push_back(js_proof);
+                }
+
+//                for (unsigned l_idx = 0; l_idx < ctx.m_watches.size(); l_idx++) {
+//                    literal l = to_literal(l_idx);
+//                    auto &wl = const_cast<watch_list &>(ctx.m_watches[l.index()]);
+//                    watch_list::clause_iterator it = wl.begin_clause();
+//                    watch_list::clause_iterator end = wl.end_clause();
+//                    for (; it != end; ++it) {
+//                        clause *cls = *it;
+//                        if (cls == nullptr) continue;
+//                        if (visited_cls.find(cls) == visited_cls.end()) {
+//                            visited_cls.emplace(cls);
+//                            literal *lits = cls->begin();
+//                            for (unsigned li = 0; li < cls->get_num_literals(); li++) {
+//                                literal lit = lits[li];
+//                                if (visited_expr.find(lit.var()) != visited_expr.end()) continue;
+//                                visited_expr.emplace(lit.var());
+//                                expr_ref e = ctx.literal2expr(lit);
+//                                to_analyze.push_back(e.get());
+//                            }
+//                        }
+//                        justification *js = cls->get_justification();
+//                        if (visited_js.find(js) == visited_js.end()) {
+//                            visited_js.emplace(js);
+//                            proof *js_proof = get_proof_if_available(js);
+//                            if (js_proof == nullptr) continue;
+//                            to_analyze.push_back(js_proof);
+//                        }
+//                    }
+//                }
+
+                for (expr *e: to_analyze) {
+                    ptr_vector<expr> sub = least_logical_subexpr_containing_expr(e, call.out_args[ai]);
+                    axiom_expr_info info{sub, ai, call};
+                    relevant_exprs.push_back(info);
+
+//                    ptr_vector<expr> negated_sub = least_logical_negated_subexpr_containing_expr(e, call.out_args[ai]);
+//                    expr_info info2{negated_sub, ai, call};
+//                    relevant_exprs.push_back(info2);
+                }
+            }
+        }
+
+        for (auto &&info : relevant_exprs) {
+            for (auto &&e: info.exprs) {
+                expr *precondition = find_precondition(e, info.call, info.call.out_args[info.arg_idx]);
+                if (precondition == nullptr) continue;
+
+//                std::cout << "Find precondition: \n " << mk_pp(e, m) << "\n" << mk_pp(precondition, m) << "\n" << std::endl;
+
+                ctx.internalize(precondition, is_quantifier(precondition));
+                ctx.mark_as_relevant(precondition);
+                m.inc_ref(precondition);
+
+
+//                expr *lit_expr = m.mk_implies_simplified(precondition, e);
+//                literal lit = mk_literal(lit_expr);
+//                mk_th_axiom(lit);
+//                visited_expr.emplace(lit.var());
+
+
+                literal lit = mk_eq(e, precondition, is_quantifier(precondition));
+                mk_th_axiom(lit);
+
+//                literal lhs = mk_literal(precondition);
+//                lhs.neg();
+//                literal rhs = mk_literal(e);
+//
+//                visited_expr.emplace(lhs.var());
+//                visited_expr.emplace(rhs.var());
+//
+//                ctx.mk_th_axiom(get_id(), lhs, rhs);
+//
+//                lhs.neg();
+//                rhs.neg();
+//                ctx.mk_th_axiom(get_id(), lhs, rhs);
+
+
+//                literal lits[2] = { lhs, rhs};
+//                justification* js = ctx.mk_justification(theory_axiom_justification(get_id(), ctx.get_region(), 2, lits));
+
+//                proof* prf = m.mk_def_axiom(m.mk_implies(precondition, e));
+//                m.inc_ref(prf);
+//                justification* js = ctx.mk_justification(justification_proof_wrapper(ctx, prf));
+////
+//                bool_var_data& rhs_b_data = ctx.get_bdata(rhs.var());
+//                ctx.set_justification(rhs.var(), rhs_b_data, b_justification(js));
+            }
+        }
+    }
 
     expr *theory_function_call::replace_expr(expr *original, expr *from, expr *to) {
         if (original == from) return to;
@@ -435,10 +590,11 @@ namespace smt {
         return nullptr;
     }
 
-    void llsce(ast_manager &m, expr *e, expr *target, expr *nearest_logical_parent, ptr_vector<expr> &result) {
-        bool is_logic = m.is_bool(e);
+    void llsce(ast_manager &m, expr *e, expr *target, expr *nearest_logical_parent, ptr_vector<expr> &result,
+               bool match_only_negations) {
+        bool is_matched = m.is_bool(e) && (!match_only_negations || m.is_not(e));
         if (e == target) {
-            if (is_logic) {
+            if (is_matched) {
                 result.push_back(e);
                 return;
             }
@@ -446,9 +602,13 @@ namespace smt {
                 result.push_back(nearest_logical_parent);
                 return;
             }
+            if (match_only_negations) {
+                // may be no negations
+                return;
+            }
             UNREACHABLE();
         }
-        expr *new_parent = is_logic ? e : nearest_logical_parent;
+        expr *new_parent = is_matched ? e : nearest_logical_parent;
         switch (e->get_kind()) {
             case AST_VAR:
                 break;
@@ -456,14 +616,14 @@ namespace smt {
                 app *a = to_app(e);
                 for (unsigned i = 0; i < a->get_num_args(); ++i) {
                     expr *arg = a->get_arg(i);
-                    llsce(m, arg, target, new_parent, result);
+                    llsce(m, arg, target, new_parent, result, match_only_negations);
                 }
                 break;
             }
             case AST_QUANTIFIER: {
                 quantifier *q = to_quantifier(e);
                 expr *arg = q->get_expr();
-                llsce(m, arg, target, new_parent, result);
+                llsce(m, arg, target, new_parent, result, match_only_negations);
                 break;
             }
             default: UNREACHABLE();
@@ -473,7 +633,13 @@ namespace smt {
 
     ptr_vector<expr> theory_function_call::least_logical_subexpr_containing_expr(expr *e, expr *target) {
         ptr_vector<expr> result;
-        llsce(m, e, target, nullptr, result);
+        llsce(m, e, target, nullptr, result, false);
+        return result;
+    }
+
+    ptr_vector<expr> theory_function_call::least_logical_negated_subexpr_containing_expr(expr *e, expr *target) {
+        ptr_vector<expr> result;
+        llsce(m, e, target, nullptr, result, true);
         return result;
     }
 
@@ -492,36 +658,70 @@ namespace smt {
 
     expr *
     theory_function_call::find_precondition(expr *expression, theory_function_call::call_info &call, expr *argument) {
+        if (m.is_not(expression)) {
+            expr *negated_expr = to_app(expression)->get_arg(0);
+            expr *negated_precondition = find_precondition(negated_expr, call, argument);
+            if (negated_precondition == nullptr) return nullptr;
+            return m.mk_not(negated_precondition);
+        }
+
         std::stringstream expr_str_builder;
         expr_str_builder << mk_pp(expression, m);
         auto &&expr_str = expr_str_builder.str();
 
+        arith_util _arith(m);
+        expr *x = _arith.mk_add(call.in_args[0], _arith.mk_int(5));
+
         if (expr_str == "(<= query!0_2_n 17)") {
-            std::cout << "Match expr 0" << std::endl;
-            arith_util _arith(m);
-            return _arith.mk_ge(call.in_args[0], _arith.mk_int(12));
+            return _arith.mk_le(x, _arith.mk_int(17));
         } else if (expr_str == "(>= (+ query!0_2_n (* (- 1) recursion_0_1)) (- 1))") {
-            std::cout << "Match expr 1" << std::endl;
             expr *recursion_var = to_app(to_app(to_app(expression)->get_arg(0))->get_arg(1))->get_arg(1);
-            arith_util _arith(m);
-            expr *x = _arith.mk_add(call.in_args[0], _arith.mk_int(5));
             return _arith.mk_ge(_arith.mk_add(x, _arith.mk_mul(_arith.mk_int(-1), recursion_var)), _arith.mk_int(-1));
         } else if (expr_str == "(<= (+ query!0_2_n (* (- 1) recursion_0_1)) (- 1))") {
-            std::cout << "Match expr 1" << std::endl;
             expr *recursion_var = to_app(to_app(to_app(expression)->get_arg(0))->get_arg(1))->get_arg(1);
-            arith_util _arith(m);
-            expr *x = _arith.mk_add(call.in_args[0], _arith.mk_int(5));
             return _arith.mk_le(_arith.mk_add(x, _arith.mk_mul(_arith.mk_int(-1), recursion_var)), _arith.mk_int(-1));
         } else if (expr_str == "(= (+ query!0_2_n (* (- 1) recursion_0_1)) (- 1))") {
-            std::cout << "Match expr 1" << std::endl;
             expr *recursion_var = to_app(to_app(to_app(expression)->get_arg(0))->get_arg(1))->get_arg(1);
-            arith_util _arith(m);
-            expr *x = _arith.mk_add(call.in_args[0], _arith.mk_int(5));
             return _arith.mk_eq(_arith.mk_add(x, _arith.mk_mul(_arith.mk_int(-1), recursion_var)), _arith.mk_int(-1));
         } else if (expr_str == "(function_call query!0_3_n query!0_0_n query!0_2_n)") {
             return m.mk_true();
+        } else if (expr_str == "(= recursion_0_1 (+ 1 query!0_2_n))") {
+            expr *recursion_var = to_app(expression)->get_arg(0);
+            return m.mk_eq(recursion_var, _arith.mk_add(_arith.mk_int(1), x));
+        } else if (expr_str == "(<= (+ recursion_0_1 (* (- 1) (+ 1 query!0_2_n))) 0)") {
+            expr *recursion_var = to_app(to_app(expression)->get_arg(0))->get_arg(0);
+            expr *some = _arith.mk_mul(_arith.mk_int(-1), _arith.mk_add(_arith.mk_int(1), x));
+            return _arith.mk_le(_arith.mk_add(recursion_var, some), _arith.mk_int(0));
+        } else if (expr_str == "(>= (+ recursion_0_1 (* (- 1) (+ 1 query!0_2_n))) 0)") {
+            expr *recursion_var = to_app(to_app(expression)->get_arg(0))->get_arg(0);
+            expr *some = _arith.mk_mul(_arith.mk_int(-1), _arith.mk_add(_arith.mk_int(1), x));
+            return _arith.mk_ge(_arith.mk_add(recursion_var, some), _arith.mk_int(0));
+        } else if (expr_str == "(<= aux!3_n 17)") {
+            return _arith.mk_le(x, _arith.mk_int(17));
+        } else if (expr_str == "(function_call aux!2_n recursion_0_n aux!3_n)") {
+            return m.mk_true();
+        } else if (expr_str == "(= (+ recursion_0_0 (* (- 1) aux!3_n)) 1)") {
+            expr *recursion_var = to_app(to_app(expression)->get_arg(0))->get_arg(0);
+            return m.mk_eq(_arith.mk_add(recursion_var, _arith.mk_mul(_arith.mk_int(-1), x)), _arith.mk_int(1));
+        } else if (expr_str == "(= recursion_0_0 (+ 1 aux!3_n))") {
+            expr *recursion_var = to_app(expression)->get_arg(0);
+            return m.mk_eq(recursion_var, _arith.mk_add(_arith.mk_int(1), x));
+        } else if (expr_str == "(<= (+ recursion_0_0 (* (- 1) aux!3_n)) 1)") {
+            expr *recursion_var = to_app(to_app(expression)->get_arg(0))->get_arg(0);
+            return _arith.mk_le(_arith.mk_add(recursion_var, _arith.mk_mul(_arith.mk_int(-1), x)), _arith.mk_int(1));
+        } else if (expr_str == "(>= (+ recursion_0_0 (* (- 1) aux!3_n)) 1)") {
+            expr *recursion_var = to_app(to_app(expression)->get_arg(0))->get_arg(0);
+            return _arith.mk_ge(_arith.mk_add(recursion_var, _arith.mk_mul(_arith.mk_int(-1), x)), _arith.mk_int(1));
+        } else if (expr_str == "(<= (+ recursion_0_0 (* (- 1) (+ 1 aux!3_n))) 0)") {
+            expr *recursion_var = to_app(to_app(expression)->get_arg(0))->get_arg(0);
+            expr *some = _arith.mk_mul(_arith.mk_int(-1), _arith.mk_add(_arith.mk_int(1), x));
+            return _arith.mk_le(_arith.mk_add(recursion_var, some), _arith.mk_int(0));
+        } else if (expr_str == "(>= (+ recursion_0_0 (* (- 1) (+ 1 aux!3_n))) 0)") {
+            expr *recursion_var = to_app(to_app(expression)->get_arg(0))->get_arg(0);
+            expr *some = _arith.mk_mul(_arith.mk_int(-1), _arith.mk_add(_arith.mk_int(1), x));
+            return _arith.mk_ge(_arith.mk_add(recursion_var, some), _arith.mk_int(0));
         } else {
-            std::cout << "Unexpected lemma: " << expr_str << std::endl;
+            std::cout << "Unexpected lemma: " << expr_str << " Call: " << mk_pp(call.call, m) << std::endl;
             return nullptr;
         }
     }
@@ -537,70 +737,6 @@ namespace smt {
         ctx.m_bool_var2expr[lit.var()] = new_expr;
 
         ctx.display_literal_smt2(std::cout, lit) << std::endl;
-    }
-
-
-    void theory_function_call::analyze_lemma(expr_ref &lemma, theory_function_call::call_info &call, expr *argument) {
-//        std::cout << "Analyze lemma literal: " << mk_pp(lemma, m) << std::endl;
-        std::stringstream lemma_str_builder;
-        lemma_str_builder << mk_pp(lemma, m);
-        auto &&lemma_str = lemma_str_builder.str();
-        expr *precondition = nullptr;
-        // res = arg + 5
-        if (lemma_str == "(not (<= query!0_2_n 17))") {
-            if (call.checked_lemmas[0]) return;
-//            std::cout << "Found lemma 0" << std::endl;
-            arith_util _arith(m);
-            precondition = _arith.mk_ge(call.in_args[0], _arith.mk_int(12));
-            call.checked_lemmas[0] = true;
-        } else if (lemma_str == "(not (>= (+ query!0_2_n (* (- 1) recursion_0_1)) (- 1)))") {
-            if (call.checked_lemmas[1]) return;
-//            std::cout << "Found lemma 1" << std::endl;
-            expr *recursion_var = to_app(
-                    to_app(
-                            to_app(
-                                    to_app(lemma.get())->get_arg(0)
-                            )->get_arg(0)
-                    )->get_arg(1)
-            )->get_arg(1);
-
-            arith_util _arith(m);
-            expr *x = _arith.mk_add(call.in_args[0], _arith.mk_int(5));
-            precondition = m.mk_not(
-                    _arith.mk_ge(_arith.mk_add(x, _arith.mk_mul(_arith.mk_int(-1), recursion_var)), _arith.mk_int(-1))
-            );
-            call.checked_lemmas[1] = true;
-        } else {
-//            std::cout << "Unexpected lemma" << std::endl;
-        }
-        if (precondition == nullptr) return;
-//        std::cout << "Precondition: " << mk_pp(precondition, m) << std::endl;
-
-        expr_ref precondition_expr(precondition, get_manager());
-        ctx.internalize(precondition_expr, false);
-
-//        expr_ref pre_impl_lemma = mk_implies_simplified(precondition_expr, lemma);
-//        literal x = mk_literal(pre_impl_lemma);
-//
-//        ctx.display_literal_smt2(std::cout, pre_impl_lemma_lit) << std::endl;
-//
-//        ctx.mark_as_relevant(precondition);
-//        literal lits[1] = {pre_impl_lemma_lit};
-//
-//        ctx.mk_th_axiom(get_id(), 1, lits);
-//        ctx.mk_th_lemma(get_id(), 1, lits);
-
-//        ctx.internalize(precondition_expr, true);
-//
-//        literal precondition_literal = ctx.get_literal(precondition_expr);
-//        literal postcondition_literal = ctx.get_literal(lemma);
-//        literal call_literal = ctx.get_literal(call.call);
-//        ctx.mark_as_relevant(precondition_literal);
-//
-//        ctx.mk_th_axiom(get_id(), precondition_literal, postcondition_literal);
-
-        literal x = mk_eq(precondition_expr, lemma, false);
-        mk_th_axiom(x);
     }
 
 

@@ -211,7 +211,7 @@ namespace smt {
        \brief Abstract class for justifications that contains set of literals.
     */
     class simple_justification : public justification {
-    protected:
+    public:
         unsigned        m_num_literals;
         literal *       m_literals;
         
@@ -384,6 +384,7 @@ namespace smt {
        Instead, they store a set of pairs (sign, expr). This pair is represented as a tagged pointer.
     */
     class theory_lemma_justification : public justification {
+    public:
         family_id    m_th_id;
         vector<parameter> m_params;
         unsigned     m_num_literals;

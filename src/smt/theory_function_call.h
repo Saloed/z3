@@ -5,6 +5,7 @@
 #pragma once
 
 #include <unordered_set>
+#include <unordered_map>
 #include "smt/smt_theory.h"
 #include "ast/function_call_decl_plugin.h"
 #include "util/union_find.h"
@@ -33,6 +34,11 @@ namespace smt {
         unsigned m_propagate_idx = 0;
         std::unordered_set<std::string> aux_history;
         std::unordered_set<std::string> lemma_history;
+        std::unordered_set<unsigned > visited_expr;
+        std::unordered_set<justification *> visited_js;
+        std::unordered_set<clause *> visited_cls;
+
+        std::unordered_map<unsigned int, std::string> bv2Expr_history;
 
         th_trail_stack &get_trail_stack() { return m_trail_stack; }
 
@@ -43,6 +49,8 @@ namespace smt {
         bool is_function_call_sort(enode const *n) const { return is_function_call_sort(n->get_owner()); }
 
         bool is_function_call(app const *n) const { return n->is_app_of(get_id(), OP_FUNCTION_CALL); }
+
+        bool is_function_call(expr const *n) const { return is_app(n) && is_function_call(to_app(n)); }
 
         bool is_function_call(enode const *n) const { return is_function_call(n->get_owner()); }
 
@@ -57,6 +65,8 @@ namespace smt {
         theory *mk_fresh(context *new_ctx) override {
             return alloc(theory_function_call, *new_ctx);
         }
+
+        const char *get_name() const override { return "function-call"; }
 
         theory_var find(theory_var v) const { return m_find.find(v); }
 
@@ -98,20 +108,22 @@ namespace smt {
 
         theory_var mk_var(enode *n) override;
 
-        void analyze_lemma(expr_ref &lemma, call_info &call, expr *argument);
-
         model_value_proc *mk_value(enode *n, model_generator &mg) override;
 
         void mk_th_axiom(literal& lit);
 
         void replace_literal(literal &lit, call_info &call, expr *argument);
 
-        void analyze_all_exprs();
+        void analyze_all_exprs_via_replace();
 
         ptr_vector<expr> least_logical_subexpr_containing_expr(expr *e, expr *target);
 
         expr *find_precondition(expr *expression, call_info &call, expr *argument);
 
         expr *replace_expr(expr *original, expr *from, expr *to);
+
+        ptr_vector<expr> least_logical_negated_subexpr_containing_expr(expr *e, expr *target);
+
+        void analyze_all_exprs_via_axiom();
     };
 }
