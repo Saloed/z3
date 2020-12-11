@@ -417,3 +417,10 @@ void solver_pool::refresh(solver* base_solver) {
         }
     }
 }
+
+std::ostream &solver_pool::display(std::ostream &out) {
+    for(auto&& solver: m_solvers){
+        solver->display(out) << "\n";
+    }
+    return out;
+}

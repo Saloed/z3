@@ -27,6 +27,7 @@ z3_add_component(smt
     smt_clause_proof.cpp
     smt_conflict_resolution.cpp
     smt_consequences.cpp
+    smt_functions_preconditions.cpp
     smt_context.cpp
     smt_context_inv.cpp
     smt_context_pp.cpp

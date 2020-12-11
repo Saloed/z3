@@ -23,6 +23,7 @@ Notes:
 
 #include <sstream>
 #include <iomanip>
+#include <solver/solver_na2as.h>
 
 #include "util/util.h"
 #include "util/timeit.h"
@@ -1026,6 +1027,12 @@ app_ref pred_transformer::mk_fresh_rf_tag ()
     return app_ref(m.mk_const (pm.get_n_pred (decl)), m);
 }
 
+std::ostream &display_rf(std::ostream &tout, reach_fact *rf, ast_manager &m) {
+    tout << (rf->is_init() ? "INIT " : "")
+         << mk_pp(rf->get(), m) << "\n";
+    return tout;
+}
+
 void pred_transformer::add_rf (reach_fact *rf, bool force)
 {
     timeit _timer (is_trace_enabled("spacer_timeit"),
@@ -1322,6 +1329,7 @@ bool pred_transformer::is_qblocked (pob &n) {
 void pred_transformer::mbp(app_ref_vector &vars, expr_ref &fml, model &mdl,
                            bool reduce_all_selects, bool force) {
     scoped_watch _t_(m_mbp_watch);
+//    TRACE("xxx", tout << "Use native mbp: " << use_native_mbp() << "\n";);
     qe_project(m, vars, fml, mdl, reduce_all_selects, use_native_mbp(), !force);
 }
 
@@ -1571,7 +1579,7 @@ void pred_transformer::mk_assumptions(func_decl* head, expr* fml,
     }
 }
 
-void pred_transformer::initialize(decl2rel const& pts)
+void pred_transformer::initialize(decl2rel const& pts, solver_na2as* precondition_solver)
 {
     m_init = m.mk_false();
     m_transition = m.mk_true();
@@ -1579,6 +1587,15 @@ void pred_transformer::initialize(decl2rel const& pts)
     th_rewriter rw(m);
     rw(m_transition);
     rw(m_init);
+
+    expr *new_init = precondition_solver->find_precondition(m_init);
+    expr *new_tr = precondition_solver->find_precondition(m_transition);
+
+//    expr_ref new_init_ref(new_init, m);
+//    expr_ref new_tr_ref(new_tr, m);
+//
+//    m_init = std::move(new_init_ref);
+//    m_transition = std::move(new_tr_ref);
 
     m_solver->assert_expr (m_transition);
     m_solver->assert_expr (m_init, 0);
@@ -2285,10 +2302,15 @@ context::context(fp_params const& params, ast_manager& m) :
     ref<solver> pool2_base =
         mk_smt_solver(m, p, params.spacer_logic());
 
+
+
     unsigned max_num_contexts = params.spacer_max_num_contexts();
     m_pool0 = alloc(solver_pool, pool0_base.get(), max_num_contexts);
     m_pool1 = alloc(solver_pool, pool1_base.get(), max_num_contexts);
     m_pool2 = alloc(solver_pool, pool2_base.get(), max_num_contexts);
+
+    m_precondition_solver = reinterpret_cast<solver_na2as *>( mk_smt_solver(m, p, params.spacer_logic()));
+    m_precondition_solver->setup();
 
     updt_params();
 
@@ -2416,7 +2438,7 @@ void context::init_rules(datalog::rule_set& rules, decl2rel& rels)
     // Initialize the predicate transformers.
     for (auto &entry : rels) {
         pred_transformer* rel = entry.m_value;
-        rel->initialize(rels);
+        rel->initialize(rels, mk_precondition_solver());
         TRACE("spacer", rel->display(tout); );
     }
 
@@ -2645,6 +2667,8 @@ void context::init_global_smt_params() {
     m_pool0->updt_params(p);
     m_pool1->updt_params(p);
     m_pool2->updt_params(p);
+
+    m_precondition_solver->updt_params(p);
 }
 void context::init_lemma_generalizers()
 {
@@ -2998,6 +3022,38 @@ void context::display_certificate(std::ostream &out) const {
     }
 }
 
+std::ostream &context::display(std::ostream &out) const {
+    out << "Context:\n";
+    out << "Solver 0:\n";
+    m_pool0->display(out);
+    out << "\nSolver 1:\n";
+    m_pool1->display(out);
+    out << "\nSolver 2:\n";
+    m_pool2->display(out);
+    out << "\nSolver Precondition:\n";
+    m_precondition_solver->display(out);
+
+    out << "\nDatalog ctx:\n";
+    m_context->display(out);
+
+    out << "\nRels:\n";
+    for (auto &&it: m_rels) {
+        out << mk_pp(it.m_key, m) << "\n";
+        it.m_value->display(out) << "\n";
+    }
+    out << "\nQuery predicate:\n";
+    out << mk_pp(m_query_pred, m) << "\n";
+    out << "\nQuery:\n";
+    m_query->display(out) << "\n";
+
+    out << "\nPob queue:\n";
+    for(auto&& it = m_pob_queue.cbegin(); it != m_pob_queue.cend(); it++){
+        (*it)->display(out, true) << "\n";
+    }
+
+    return out;
+}
+
 ///this is where everything starts
 lbool context::solve_core (unsigned from_lvl)
 {
@@ -3013,6 +3069,9 @@ lbool context::solve_core (unsigned from_lvl)
     unsigned max_level = m_max_level;
 
     for (unsigned i = from_lvl; i < max_level; ++i) {
+        TRACE("xxx", tout << "ITERATION: " << i << "\n";);
+        TRACE("xxx", display(tout); tout << "\n";);
+
         checkpoint();
         m_expanded_lvl = infty_level ();
         m_stats.m_max_query_lvl = lvl;
@@ -3275,6 +3334,8 @@ bool context::is_reachable(pob &n)
                                     reach_pred_used, num_reuse_reach);
     n.m_level = saved;
 
+//    TRACE("xxx", tout << "Pt is reachable: " << res << "\n";);
+
     if (res != l_true || !is_concrete) {
         IF_VERBOSE(1, verbose_stream () << " F "
                    << std::fixed << std::setprecision(2)
@@ -3440,6 +3501,8 @@ lbool context::handle_unknown(pob &n, const datalog::rule *r, model &model) {
 /// out contains new pobs to add to the queue in case the result is l_undef
 lbool context::expand_pob(pob& n, pob_ref_buffer &out)
 {
+//    TRACE("xxx", tout << "Expand pob" << "\n";);
+
     SASSERT(out.empty());
     pob::on_expand_event _evt(n);
 
@@ -3746,6 +3809,15 @@ bool context::propagate(unsigned min_prop_lvl,
 reach_fact *pred_transformer::mk_rf(pob& n, model &mdl, const datalog::rule& r)
 {
     SASSERT(&n.pt() == this);
+
+//    TRACE("xxx", tout << "Context:\n"; display(tout););
+
+//    TRACE("xxx",
+//          datalog::rule_manager &rm = ctx.get_datalog_context().get_rule_manager();
+//                  tout << "Mk rf\n" << "Model:\n"; model_smt2_pp(tout, m, mdl, 0);
+//                  tout << "Rule:\n"; rm.display_smt2(r, tout) << "\n";
+//    );
+
     timeit _timer1 (is_trace_enabled("spacer_timeit"),
                     "mk_rf",
                     verbose_stream ());
@@ -3812,11 +3884,21 @@ reach_fact *pred_transformer::mk_rf(pob& n, model &mdl, const datalog::rule& r)
 
     SASSERT (vars.empty ());
 
+    auto* precondition_solver =  ctx.mk_precondition_solver();
+    expr* precondition = precondition_solver->find_precondition(res.get());
+
     m_stats.m_num_reach_queries++;
     ptr_vector<app> empty;
-    reach_fact *f = alloc(reach_fact, m, r, res, elim_aux ? empty : aux_vars);
+    reach_fact *f = alloc(reach_fact, m, r, precondition, elim_aux ? empty : aux_vars);
     for (reach_fact* cf : child_reach_facts)
         f->add_justification(cf);
+
+//    TRACE("xxx", tout << "Add new rf:\n"; display_rf(tout, f, m) << "\nChildren:\n";
+//            for (reach_fact *cf : child_reach_facts) {
+//                display_rf(tout, cf, m) << "\n";
+//            }
+//    );
+
     return f;
 }
 

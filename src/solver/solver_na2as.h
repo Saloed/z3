@@ -46,6 +46,10 @@ public:
     expr * get_assumption(unsigned idx) const override { return m_assumptions[idx]; }
     lbool get_consequences(expr_ref_vector const& asms, expr_ref_vector const& vars, expr_ref_vector& consequences) override;
     lbool find_mutexes(expr_ref_vector const& vars, vector<expr_ref_vector>& mutexes) override;
+
+    virtual expr *find_precondition(expr *e) { return nullptr; }
+    virtual void setup() {}
+
 protected:
     virtual lbool check_sat_core2(unsigned num_assumptions, expr * const * assumptions) = 0;
     virtual lbool check_sat_cc_core(const expr_ref_vector &assumptions, vector<expr_ref_vector> const &clauses) { NOT_IMPLEMENTED_YET(); return l_undef; }

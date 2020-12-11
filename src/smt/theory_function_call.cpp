@@ -76,6 +76,7 @@ namespace smt {
     }
 
     bool theory_function_call::internalize_term(app *n) {
+        TRACE("xxx", tout << "Internalize: " << mk_pp(n, m) << "\n";);
         if (ctx.e_internalized(n)) {
             return true;
         }
@@ -283,7 +284,7 @@ namespace smt {
         auto &&bv2Expr_printer = [&](std::ostream &out, expr *e, unsigned i) {
             return print_expr(out, e, i, ctx);
         };
-        TRACE("xxx", ptr_vec_diff_printer<expr>(tout, bv2Expr_history, ctx.m_bool_var2expr, bv2Expr_printer););
+//        TRACE("xxx", ptr_vec_diff_printer<expr>(tout, bv2Expr_history, ctx.m_bool_var2expr, bv2Expr_printer););
 
         //        TRACE("xxx", print_bv2expr(tout, ctx.m_bool_var2expr,  ctx););
 
@@ -674,6 +675,8 @@ namespace smt {
 
         if (expr_str == "(<= query!0_2_n 17)") {
             return _arith.mk_le(x, _arith.mk_int(17));
+        } if (expr_str == "(<= query!0_2_n 99)") {
+            return _arith.mk_le(x, _arith.mk_int(99));
         } else if (expr_str == "(>= (+ query!0_2_n (* (- 1) recursion_0_1)) (- 1))") {
             expr *recursion_var = to_app(to_app(to_app(expression)->get_arg(0))->get_arg(1))->get_arg(1);
             return _arith.mk_ge(_arith.mk_add(x, _arith.mk_mul(_arith.mk_int(-1), recursion_var)), _arith.mk_int(-1));
@@ -761,6 +764,21 @@ namespace smt {
 
     bool theory_function_call::build_models() const {
         return false;
+    }
+
+    expr *theory_function_call::find_precondition_for_expr(expr *e) {
+        expr *result = e;
+        for (auto &&call : registered_calls) {
+            for (unsigned ai = 0; ai < call.out_args.size(); ai++) {
+                ptr_vector<expr> sub = least_logical_subexpr_containing_expr(result, call.out_args[ai]);
+                for (auto &&sub_e: sub) {
+                    expr *precondition = find_precondition(sub_e, call, call.out_args[ai]);
+                    if (precondition == nullptr) continue;
+                    result = replace_expr(result, sub_e, precondition);
+                }
+            }
+        }
+        return result;
     }
 
 }

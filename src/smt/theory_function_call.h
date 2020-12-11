@@ -125,5 +125,8 @@ namespace smt {
         ptr_vector<expr> least_logical_negated_subexpr_containing_expr(expr *e, expr *target);
 
         void analyze_all_exprs_via_axiom();
+
+        expr* find_precondition_for_expr(expr* e);
+
     };
 }

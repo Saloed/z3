@@ -32,6 +32,8 @@ Notes:
 
 #include "muz/base/fp_params.hpp"
 
+#include "solver/solver_na2as.h"
+
 namespace datalog {
     class rule_set;
     class context;
@@ -452,7 +454,7 @@ public:
 
     void add_rule(datalog::rule* r) {m_rules.push_back(r);}
     void add_use(pred_transformer* pt) {if (!m_use.contains(pt)) {m_use.insert(pt);}}
-    void initialize(decl2rel const& pts);
+    void initialize(decl2rel const& pts, solver_na2as* precondition_solver);
 
     func_decl* head() const {return m_head;}
     ptr_vector<datalog::rule> const& rules() const {return m_rules;}
@@ -813,6 +815,17 @@ public:
 };
 
 
+class iterable_pob_priority_queue : public std::priority_queue<pob *, std::vector<pob *>, pob_gt_proc> {
+public:
+    std::vector<pob *>::const_iterator cbegin() {
+        return c.cbegin();
+    }
+
+    std::vector<pob *>::const_iterator cend() {
+        return c.cend();
+    }
+};
+
 class pob_queue {
 
     typedef std::priority_queue<pob*, std::vector<pob*>, pob_gt_proc> pob_queue_ty;
@@ -820,7 +833,7 @@ class pob_queue {
     unsigned m_max_level;
     unsigned m_min_depth;
 
-    pob_queue_ty  m_data;
+    iterable_pob_priority_queue  m_data;
 
 public:
     pob_queue(): m_root(nullptr), m_max_level(0), m_min_depth(0) {}
@@ -849,6 +862,14 @@ public:
     unsigned max_level() const {return m_max_level;}
     unsigned min_depth() const {return m_min_depth;}
     size_t size() const {return m_data.size();}
+
+    std::vector<pob *>::const_iterator cbegin() {
+        return m_data.cbegin();
+    }
+
+    std::vector<pob *>::const_iterator cend() {
+        return m_data.cend();
+    }
 };
 
 
@@ -938,6 +959,7 @@ class context {
     scoped_ptr<solver_pool> m_pool1;
     scoped_ptr<solver_pool> m_pool2;
 
+    scoped_ptr<solver_na2as> m_precondition_solver;
 
     random_gen           m_random;
     spacer_children_order m_children_order;
@@ -1145,6 +1167,8 @@ public:
     solver* mk_solver0() {return m_pool0->mk_solver();}
     solver* mk_solver1() {return m_pool1->mk_solver();}
     solver* mk_solver2() {return m_pool2->mk_solver();}
+
+    solver_na2as* mk_precondition_solver(){return m_precondition_solver.get();}
 };
 
 inline bool pred_transformer::use_native_mbp () {return ctx.use_native_mbp ();}

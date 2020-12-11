@@ -985,6 +985,18 @@ namespace datalog {
     void context::display(std::ostream & out) const {
         display_rules(out);
         if (m_rel) m_rel->display_facts(out);
+        out << "Transformed rules\n";
+        m_transformed_rule_set.display(out);
+        out << "Rule fmls\n";
+        for(auto&& r: m_rule_fmls){
+            out << mk_pp(r, m) << "\n";
+        }
+        out << "Background\n";
+        for(auto&& r: m_background){
+            out << mk_pp(r, m) << "\n";
+        }
+        out << "Last answer:\n" << mk_pp(m_last_answer, m) << "\n";
+        out << "Last ground answer:\n" << mk_pp(m_last_ground_answer, m) << "\n";
     }
 
     void context::display_profile(std::ostream& out) const {

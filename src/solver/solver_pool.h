@@ -67,6 +67,8 @@ public:
     void reset_solver(solver* s);
     void updt_params(const params_ref &p);
 
+    std::ostream& display(std::ostream& out);
+
 };
 
 

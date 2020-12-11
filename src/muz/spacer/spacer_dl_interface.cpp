@@ -105,6 +105,12 @@ lbool dl_interface::query(expr * query)
 
     apply_default_transformation(m_ctx);
 
+    TRACE("spacer",
+          tout << "query: " << mk_pp(query, m) << "\n";
+                  tout << "rules:\n";
+                  m_ctx.display_rules(tout);
+    );
+
     if (m_ctx.get_params().xform_slice()) {
         datalog::rule_transformer transformer(m_ctx);
         datalog::mk_slice* slice = alloc(datalog::mk_slice, m_ctx);
@@ -163,6 +169,12 @@ lbool dl_interface::query(expr * query)
         IF_VERBOSE(2, model_smt2_pp(verbose_stream(), m, *m_context->get_model(), 0););
         return l_false;
     }
+
+    TRACE("spacer",
+          tout << "query: " << mk_pp(query, m) << "\n";
+                  tout << "rules:\n";
+                  m_ctx.display_rules(tout);
+    );
 
     return m_context->solve(m_ctx.get_params().spacer_min_level());
 

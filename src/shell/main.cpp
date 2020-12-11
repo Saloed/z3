@@ -331,7 +331,14 @@ int STD_CALL main(int argc, char ** argv) {
 //        enable_trace("mk_clause");
 //        enable_trace("assign_core");
 //         enable_trace("unassigned_atoms");
+
         enable_trace("xxx");
+//        enable_trace("setup");
+//         enable_trace("spacer");
+//         enable_trace("rewriter");
+//         enable_trace("qe");
+
+
 //        enable_trace("proof_gen_bug");
 //        enable_trace("mk_conflict_proof");
 //        enable_trace("mk_proof");

@@ -878,6 +878,7 @@ namespace smt {
     }
 
     void setup::setup_function_calls() {
+        TRACE("setup", tout << "registering function calls\n"; );
         m_context.register_plugin(alloc(smt::theory_function_call, m_context));
     }
 
