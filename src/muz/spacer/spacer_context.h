@@ -454,7 +454,7 @@ public:
 
     void add_rule(datalog::rule* r) {m_rules.push_back(r);}
     void add_use(pred_transformer* pt) {if (!m_use.contains(pt)) {m_use.insert(pt);}}
-    void initialize(decl2rel const& pts, solver_na2as* precondition_solver);
+    void initialize(decl2rel const &pts);
 
     func_decl* head() const {return m_head;}
     ptr_vector<datalog::rule> const& rules() const {return m_rules;}

@@ -673,9 +673,19 @@ namespace smt {
         arith_util _arith(m);
         expr *x = _arith.mk_add(call.in_args[0], _arith.mk_int(5));
 
+        if (expr_str == "(function_call query!0_3_n query!0_0_n query!0_2_n)") {
+            return m.mk_true();
+//            return m.mk_eq(to_app(expression)->get_arg(2), _arith.mk_add(to_app(expression)->get_arg(1), _arith.mk_int(5)));
+        } else if (expr_str == "(function_call aux!2_n recursion_0_n aux!3_n)"){
+            return m.mk_true();
+//            return m.mk_eq(to_app(expression)->get_arg(2), _arith.mk_add(to_app(expression)->get_arg(1), _arith.mk_int(5)));
+        }
+        return nullptr;
+
         if (expr_str == "(<= query!0_2_n 17)") {
             return _arith.mk_le(x, _arith.mk_int(17));
-        } if (expr_str == "(<= query!0_2_n 99)") {
+        }
+        if (expr_str == "(<= query!0_2_n 99)") {
             return _arith.mk_le(x, _arith.mk_int(99));
         } else if (expr_str == "(>= (+ query!0_2_n (* (- 1) recursion_0_1)) (- 1))") {
             expr *recursion_var = to_app(to_app(to_app(expression)->get_arg(0))->get_arg(1))->get_arg(1);

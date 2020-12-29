@@ -24,6 +24,7 @@ Notes:
 #include <sstream>
 #include <iomanip>
 #include <solver/solver_na2as.h>
+#include <ast/function_call_decl_plugin.h>
 
 #include "util/util.h"
 #include "util/timeit.h"
@@ -52,10 +53,20 @@ Notes:
 #include "muz/transforms/dl_mk_rule_inliner.h"
 #include "muz/spacer/spacer_qe_project.h"
 #include "muz/spacer/spacer_sat_answer.h"
+#include "spacer_callback.h"
 
 #define WEAKNESS_MAX 65535
 
 namespace spacer {
+
+std::ostream &operator<<(std::ostream &out, model_ref &m) {
+    if (m.get() == nullptr) {
+        out << "null\n";
+    } else {
+        out << *m;
+    }
+    return out;
+}
 
 /// pob -- proof obligation
 pob::pob (pob* parent, pred_transformer& pt,
@@ -68,7 +79,7 @@ pob::pob (pob* parent, pred_transformer& pt,
     m_level (level), m_depth (depth),
     m_open (true), m_use_farkas (true), m_in_queue(false),
     m_weakness(0), m_blocked_lvl(0) {
-    if (add_to_parent && m_parent) {
+     if (add_to_parent && m_parent) {
         m_parent->add_child(*this);
     }
 }
@@ -124,15 +135,16 @@ void pob::get_skolems(app_ref_vector &v) {
     }
 }
 
-    std::ostream &pob::display(std::ostream &out, bool full) const {
-        out << pt().head()->get_name ()
-            << " level: " << level()
-            << " depth: " << depth()
-            << " post_id: " << post()->get_id()
-            << (is_in_queue() ? " in_queue" : "");
-        if (full) out << "\n" << m_post;
-        return out;
-    }
+std::ostream &pob::display(std::ostream &out, bool full) const {
+    out << pt().head()->get_name() << "\n";
+    pt().display(out) << "\n"
+                      << " level: " << level()
+                      << " depth: " << depth()
+                      << " post_id: " << post()->get_id()
+                      << (is_in_queue() ? " in_queue" : "");
+    if (full) out << "\n" << m_post;
+    return out;
+}
 
 // ----------------
 // pob_queue
@@ -726,6 +738,14 @@ std::ostream& pred_transformer::display(std::ostream& out) const
         rm.display_smt2(*rules()[i], out) << "\n";
     }
     out << "transition\n" << mk_pp(transition(), m) << "\n";
+    out << "formulas\nLemmas\n";
+    for (auto &lemma : m_frames.lemmas()) {
+            out << mk_pp(lemma->get_expr(), m) << "\n";
+    }
+    out << "BG invs\n";
+    for (auto &lemma : m_frames.get_bg_invs()) {
+        out << mk_pp(lemma->get_expr(), m) << "\n";
+    }
     return out;
 }
 
@@ -1579,7 +1599,7 @@ void pred_transformer::mk_assumptions(func_decl* head, expr* fml,
     }
 }
 
-void pred_transformer::initialize(decl2rel const& pts, solver_na2as* precondition_solver)
+void pred_transformer::initialize(decl2rel const &pts)
 {
     m_init = m.mk_false();
     m_transition = m.mk_true();
@@ -1588,15 +1608,6 @@ void pred_transformer::initialize(decl2rel const& pts, solver_na2as* preconditio
     rw(m_transition);
     rw(m_init);
 
-    expr *new_init = precondition_solver->find_precondition(m_init);
-    expr *new_tr = precondition_solver->find_precondition(m_transition);
-
-//    expr_ref new_init_ref(new_init, m);
-//    expr_ref new_tr_ref(new_tr, m);
-//
-//    m_init = std::move(new_init_ref);
-//    m_transition = std::move(new_tr_ref);
-
     m_solver->assert_expr (m_transition);
     m_solver->assert_expr (m_init, 0);
     TRACE("spacer",
@@ -1604,8 +1615,6 @@ void pred_transformer::initialize(decl2rel const& pts, solver_na2as* preconditio
           tout << "Transition:    " << mk_pp(m_transition,  m) << "\n";);
     SASSERT(is_app(m_init));
     //m_reachable.add_init(to_app(m_init));
-
-
 }
 
 void pred_transformer::init_rfs ()
@@ -2234,6 +2243,9 @@ pob* pred_transformer::pob_manager::mk_pob(pob *parent,
     pob p(parent, m_pt, level, depth, false);
     p.set_post(post, b);
 
+    TRACE("xxx", tout << "create pob p:\n"; p.display(tout, true) << "\n";);
+
+
     if (m_pobs.contains(p.post())) {
         for (auto *f : m_pobs[p.post()]) {
             if (f->parent() == parent && !f->is_in_queue()) {
@@ -2245,6 +2257,9 @@ pob* pred_transformer::pob_manager::mk_pob(pob *parent,
 
     pob* n = alloc(pob, parent, m_pt, level, depth);
     n->set_post(post, b);
+
+    TRACE("xxx", tout << "create pob n:\n"; n->display(tout, true) << "\n";);
+
     m_pinned.push_back(n);
 
     if (m_pobs.contains(n->post())) {
@@ -2438,7 +2453,7 @@ void context::init_rules(datalog::rule_set& rules, decl2rel& rels)
     // Initialize the predicate transformers.
     for (auto &entry : rels) {
         pred_transformer* rel = entry.m_value;
-        rel->initialize(rels, mk_precondition_solver());
+        rel->initialize(rels);
         TRACE("spacer", rel->display(tout); );
     }
 
@@ -2929,6 +2944,8 @@ model_ref context::get_model()
     get_level_property(m_inductive_lvl, refs, rs, use_bg_invs());
     inductive_property ex(m, const_cast<model_converter_ref&>(m_mc), rs);
     ex.to_model (model);
+    TRACE("xxx", tout << "Model refs:\n" << mk_pp_vec(refs.size(), reinterpret_cast<ast **>(refs.c_ptr()), m) << "\n";);
+    TRACE("xxx", tout << "Model:\n" << model;);
     return model;
 }
 
@@ -3054,9 +3071,36 @@ std::ostream &context::display(std::ostream &out) const {
     return out;
 }
 
+class callback_state {
+};
+
+void new_lemma_eh(void *state, expr *lemma, unsigned level) {
+    TRACE("xxx", tout << "New lemma eh\n";);
+}
+
+void predecessor_eh(void *state) {
+    TRACE("xxx", tout << "Predecessor eh\n";);
+}
+
+void unfold_eh(void *state) {
+    TRACE("xxx", tout << "Unfold eh\n";);
+}
+
+
+void register_special_callback(context &ctx) {
+    callback_state *state = alloc(callback_state);
+    spacer_callback *callback = alloc(user_callback, ctx, state, &new_lemma_eh, &predecessor_eh, &unfold_eh);
+    ctx.callbacks().push_back(callback);
+}
+
 ///this is where everything starts
 lbool context::solve_core (unsigned from_lvl)
 {
+
+    TRACE("xxx", tout << "Registered callbacks: " << m_callbacks.size() << "\n";);
+    register_special_callback(*this);
+
+
     scoped_watch _w_(m_solve_watch);
     //if there is no query predicate, abort
     if (!m_rels.find(m_query_pred, m_query)) { return l_false; }
@@ -3068,6 +3112,22 @@ lbool context::solve_core (unsigned from_lvl)
 
     unsigned max_level = m_max_level;
 
+    expr *transition = m_query->transition();
+    expr *function_call = to_app(to_app(transition)->get_arg(1))->get_arg(4);
+    expr *in_arg = to_app(function_call)->get_arg(1);
+    expr *out_arg = to_app(function_call)->get_arg(2);
+
+    arith_util _arith(m);
+    for (auto &&rel: m_rels) {
+        expr *lhs = m.mk_eq(out_arg, _arith.mk_add(in_arg, _arith.mk_int(5)));
+        expr *lemma = m.mk_eq(lhs, function_call);
+        rel.m_value->add_lemma(lemma, infty_level(), false);
+
+        expr *lhs2 = m.mk_eq(out_arg, _arith.mk_add(in_arg, _arith.mk_int(5)));
+        expr *lemma2 = m.mk_eq(lhs2, function_call);
+        rel.m_value->add_lemma(lemma2, infty_level(), true);
+    }
+
     for (unsigned i = from_lvl; i < max_level; ++i) {
         TRACE("xxx", tout << "ITERATION: " << i << "\n";);
         TRACE("xxx", display(tout); tout << "\n";);
@@ -3076,14 +3136,26 @@ lbool context::solve_core (unsigned from_lvl)
         m_expanded_lvl = infty_level ();
         m_stats.m_max_query_lvl = lvl;
 
-        if (check_reachability()) { return l_true; }
+        if (check_reachability()) {
+
+            TRACE("xxx", tout << "Reachable. Return true\n";);
+
+            return l_true;
+        }
 
         if (lvl > 0 && m_use_propagate)
-            if (propagate(m_expanded_lvl, lvl, UINT_MAX)) { dump_json(); return l_false; }
+            if (propagate(m_expanded_lvl, lvl, UINT_MAX)) {
+                dump_json();
+
+                TRACE("xxx", tout << "Propagate. Return false\n";);
+
+                return l_false;
+            }
 
         dump_json();
 
         if (is_inductive()){
+            TRACE("xxx", tout << "Is inductive. Return false\n";);
             return l_false;
         }
 
@@ -3185,6 +3257,8 @@ void context::log_add_lemma(pred_transformer &pt, lemma &new_lemma) {
 //
 bool context::check_reachability ()
 {
+    TRACE("xxx", tout << "Check reachability\n";);
+
     scoped_watch _w_(m_reach_watch);
 
     timeit _timer (get_verbosity_level () >= 1,
@@ -3295,6 +3369,9 @@ bool context::is_requeue(pob &n) {
 /// check whether node n is concretely reachable
 bool context::is_reachable(pob &n)
 {
+
+    TRACE("xxx", tout << "Is reachable:\n"; n.display(tout, true) << "\n";);
+
     scoped_watch _w_(m_is_reach_watch);
     // XXX hold a reference for n during this call.
     // XXX Should convert is_reachable() to accept pob_ref as argument
@@ -3382,6 +3459,8 @@ bool context::is_reachable(pob &n)
     IF_VERBOSE(1, verbose_stream () << (next ? " X " : " T ")
                << std::fixed << std::setprecision(2)
                << watch.get_seconds () << "\n";);
+
+    TRACE("xxx", tout << "Is reachable has next == " << (next != nullptr) << "\n";);
 
     // recurse on the new proof obligation
     return next ? is_reachable(*next) : true;
@@ -3501,7 +3580,7 @@ lbool context::handle_unknown(pob &n, const datalog::rule *r, model &model) {
 /// out contains new pobs to add to the queue in case the result is l_undef
 lbool context::expand_pob(pob& n, pob_ref_buffer &out)
 {
-//    TRACE("xxx", tout << "Expand pob" << "\n";);
+    TRACE("xxx", tout << "Expand pob:\n"; n.display(tout, true) << "\n";);
 
     SASSERT(out.empty());
     pob::on_expand_event _evt(n);
@@ -3550,16 +3629,32 @@ lbool context::expand_pob(pob& n, pob_ref_buffer &out)
 
     lbool res = n.pt ().is_reachable (n, &cube, &model, uses_level, is_concrete, r,
                                       reach_pred_used, num_reuse_reach);
+
+    TRACE("xxx", tout << "Reachable check:\n";
+            n.display(tout, true) << "\n";
+            tout << "Cubes:\n";
+            for (auto &&cb: cube) {
+                tout << mk_pp(cb, m) << "\n";
+            }
+            tout << "Model:\n" << model << "\n";
+    );
+    TRACE("xxx", tout << "Reachable result 0: " << res << "\n";);
+
     if (model) model->set_model_completion(false);
     if (res == l_undef && model) res = handle_unknown(n, r, *model);
 
     checkpoint ();
     IF_VERBOSE (1, verbose_stream () << "." << std::flush;);
+
+    TRACE("xxx", tout << "Reachable result 1: " << res << "\n";);
+
     switch (res) {
         //reachable but don't know if this is purely using UA
     case l_true: {
         // update stats
         m_stats.m_num_reuse_reach += num_reuse_reach;
+
+        TRACE("xxx", tout << "is concrete: " << is_concrete << "\n";);
 
         // must-reachable
         if (is_concrete) {
@@ -3744,6 +3839,9 @@ lbool context::expand_pob(pob& n, pob_ref_buffer &out)
 bool context::propagate(unsigned min_prop_lvl,
                         unsigned max_prop_lvl, unsigned full_prop_lvl)
 {
+
+    TRACE("xxx", tout << "Propagate\n";);
+
     scoped_watch _w_(m_propagate_watch);
 
     if (min_prop_lvl == infty_level()) { return false; }
@@ -3884,8 +3982,7 @@ reach_fact *pred_transformer::mk_rf(pob& n, model &mdl, const datalog::rule& r)
 
     SASSERT (vars.empty ());
 
-    auto* precondition_solver =  ctx.mk_precondition_solver();
-    expr* precondition = precondition_solver->find_precondition(res.get());
+    expr* precondition = res.get();
 
     m_stats.m_num_reach_queries++;
     ptr_vector<app> empty;
@@ -3914,7 +4011,7 @@ bool context::create_children(pob& n, datalog::rule const& r,
     scoped_watch _w_ (m_create_children_watch);
     pred_transformer& pt = n.pt();
 
-    TRACE("spacer",
+    TRACE("xxx",
           tout << "Model:\n";
           model_smt2_pp(tout, m, mdl, 0);
           tout << "\n";
