@@ -224,8 +224,8 @@ void derivation::add_premise (pred_transformer &pt,
 
 
 pob *derivation::create_first_child (model &mdl) {
-    if (m_premises.empty()) 
-        return nullptr; 
+    if (m_premises.empty())
+        return nullptr;
     m_active = 0;
     return create_next_child(mdl);
 }
@@ -236,14 +236,14 @@ void derivation::exist_skolemize(expr* fml, app_ref_vector& vars, expr_ref& res)
         res = fml;
         return;
     }
-    
+
     std::stable_sort(vars.c_ptr(), vars.c_ptr() + vars.size(), sk_lt_proc());
     unsigned j = 1;
-    for (unsigned i = 1; i < vars.size(); ++i) 
-        if (vars.get(i) != vars.get(j - 1)) 
+    for (unsigned i = 1; i < vars.size(); ++i)
+        if (vars.get(i) != vars.get(j - 1))
             vars[j++] = vars.get(i);
     vars.shrink(j);
-    
+
     TRACE("spacer", tout << "Skolemizing: " << vars << "\n";
           tout << "from " << mk_pp(fml, m) << "\n";);
 
@@ -385,7 +385,7 @@ pob *derivation::create_next_child ()
 
     // get an implicant of the summary
     expr_ref_vector u(m);
-    u.push_back (rf->get ());    
+    u.push_back (rf->get ());
     expr_ref v = mk_and (compute_implicant_literals(*mdl, u));
 
     // XXX The summary is not used by anyone after this point
@@ -410,8 +410,8 @@ pob *derivation::create_next_child ()
 
         // variables to eliminate
         vars.append (rf->aux_vars ().size (), rf->aux_vars ().c_ptr ());
-        for (unsigned i = 0, sz = pt.head ()->get_arity (); i < sz; ++i) { 
-            vars.push_back(m.mk_const(pm.o2n(pt.sig(i), 0))); 
+        for (unsigned i = 0, sz = pt.head ()->get_arity (); i < sz; ++i) {
+            vars.push_back(m.mk_const(pm.o2n(pt.sig(i), 0)));
         }
 
         if (!vars.empty ()) {
@@ -446,13 +446,13 @@ derivation::premise::premise (pred_transformer &pt, unsigned oidx,
     manager &sm = m_pt.get_manager ();
 
     unsigned sig_sz = m_pt.head ()->get_arity ();
-    for (unsigned i = 0; i < sig_sz; ++i) { 
-        m_ovars.push_back(m.mk_const(sm.o2o(pt.sig(i), 0, m_oidx))); 
+    for (unsigned i = 0; i < sig_sz; ++i) {
+        m_ovars.push_back(m.mk_const(sm.o2o(pt.sig(i), 0, m_oidx)));
     }
 
-    if (aux_vars) 
-        for (app* v : *aux_vars) 
-            m_ovars.push_back(m.mk_const(sm.n2o(v->get_decl(), m_oidx))); 
+    if (aux_vars)
+        for (app* v : *aux_vars)
+            m_ovars.push_back(m.mk_const(sm.n2o(v->get_decl(), m_oidx)));
 }
 
 /// \brief Updated the summary.
@@ -804,8 +804,8 @@ void pred_transformer::init_sig()
 
 void pred_transformer::ensure_level(unsigned level)
 {
-    if (is_infty_level(level)) 
-        return; 
+    if (is_infty_level(level))
+        return;
 
     while (m_frames.size() <= level) {
         m_frames.add_frame ();
@@ -819,8 +819,8 @@ bool pred_transformer::is_must_reachable(expr* state, model_ref* model)
     SASSERT (state);
     // XXX This seems to mis-handle the case when state is
     // reachable using the init rule of the current transformer
-    if (m_reach_facts.empty()) 
-        return false;     
+    if (m_reach_facts.empty())
+        return false;
 
     m_reach_solver->push ();
     m_reach_solver->assert_expr (state);
@@ -1165,7 +1165,7 @@ expr_ref pred_transformer::get_cover_delta(func_decl* p_orig, int level)
 
     // adjust result according to model converter.
     model_ref md = alloc(model, m);
-    md->register_decl(m_head, result);    
+    md->register_decl(m_head, result);
     model_converter_ref mc = ctx.get_model_converter();
     apply(mc, md);
     if (p_orig->get_arity() == 0) {
@@ -1222,9 +1222,9 @@ expr_ref pred_transformer::get_origin_summary (model &mdl,
             TRACE("spacer", tout << "Summary not true in the model: " << mk_pp(s, m) << "\n";);
         }
     }
-    
+
     // -- pick an implicant
-    
+
     return mk_and(compute_implicant_literals(mdl, summary));
 }
 
@@ -1299,8 +1299,8 @@ bool pred_transformer::is_blocked (pob &n, unsigned &uses_level)
     // XXX quic3: not all lemmas are asserted at the post-condition
     lbool res = m_solver->check_assumptions (post, _aux, _aux,
                                             0, nullptr, 0);
-    if (res == l_false) { 
-        uses_level = m_solver->uses_level(); 
+    if (res == l_false) {
+        uses_level = m_solver->uses_level();
     }
     return res == l_false;
 }
@@ -1432,7 +1432,7 @@ lbool pred_transformer::is_reachable(pob& n, expr_ref_vector* core,
         if (core) { core->reset(); }
         if (model && model->get()) {
             r = find_rule(**model, is_concrete, reach_pred_used, num_reuse_reach);
-            TRACE("spacer", 
+            TRACE("spacer",
                   tout << "reachable is_sat: " << is_sat << " "
                   << r << " is_concrete " << is_concrete << " rused: " << reach_pred_used << "\n";
                   ctx.get_datalog_context().get_rule_manager().display_smt2(*r, tout) << "\n";
@@ -1989,7 +1989,7 @@ void pred_transformer::update_solver_with_rfs(prop_solver *solver,
 /// pred_transformer::frames
 bool pred_transformer::frames::add_lemma(lemma *new_lemma)
 {
-    TRACE("spacer", tout << "add-lemma: " << pp_level(new_lemma->level()) << " "
+    TRACE("xxx", tout << "add-lemma: " << pp_level(new_lemma->level()) << " "
           << m_pt.head()->get_name() << " "
           << mk_pp(new_lemma->get_expr(), m_pt.get_ast_manager()) << "\n";);
 
@@ -2986,12 +2986,12 @@ expr_ref context::get_ground_sat_answer() const {
                    << "Sat answer unavailable when result is false\n";);
         return expr_ref(m);
     }
-    
+
     // convert a ground refutation into a linear counterexample
     // only works for linear CHC systems
     expr_ref_vector cex(m);
     proof_ref pf = get_ground_refutation();
-    
+
     proof_ref_vector premises(m);
     expr_ref conclusion(m);
     svector<std::pair<unsigned, unsigned>> positions;
@@ -3009,7 +3009,7 @@ expr_ref context::get_ground_sat_answer() const {
             pf.reset();
             break;
         }
-        
+
         premises.reset();
         conclusion.reset();
         positions.reset();
@@ -3019,7 +3019,7 @@ expr_ref context::get_ground_sat_answer() const {
     if (pf) {
         cex.push_back(m.get_fact(pf));
     }
-    
+
     TRACE ("spacer", tout << "ground cex\n" << cex << "\n";);
 
     return mk_and(cex);
@@ -3093,13 +3093,56 @@ void register_special_callback(context &ctx) {
     ctx.callbacks().push_back(callback);
 }
 
+expr *find_function_call(expr *root, family_id fid) {
+    if (!is_app(root)) return nullptr;
+    app *root_as_app = to_app(root);
+    if (root_as_app->is_app_of(fid, OP_FUNCTION_CALL)) {
+        return root_as_app;
+    }
+    expr *result = nullptr;
+
+    for (unsigned i = 0; i < root_as_app->get_num_args(); ++i) {
+        expr *arg = root_as_app->get_arg(i);
+        result = find_function_call(arg, fid);
+        if (result != nullptr) break;
+    }
+    return result;
+}
+
+lemma_ref mk_lemma(expr* lemma_expr, ast_manager& m){
+    lemma_ref lem = alloc(lemma, m, lemma_expr, infty_level());
+    lem->set_background(false);
+    return lem;
+}
+
+lemma_ref mk_special_lemma(expr *lemma_source, ast_manager &m) {
+    family_id fc_id = m.mk_family_id("function_call");
+    expr *function_call = find_function_call(lemma_source, fc_id);
+    if (function_call == nullptr) return nullptr;
+    expr *in_arg = to_app(function_call)->get_arg(1);
+    expr *out_arg = to_app(function_call)->get_arg(2);
+
+    arith_util _arith(m);
+    expr *lemma_expr = m.mk_eq(out_arg, _arith.mk_add(in_arg, _arith.mk_int(5)));
+    return mk_lemma(lemma_expr, m);
+}
+
+
+lemma_ref mk_special_lemma2(expr *lemma_source, ast_manager &m) {
+    family_id fc_id = m.mk_family_id("function_call");
+    expr *function_call = find_function_call(lemma_source, fc_id);
+    if (function_call == nullptr) return nullptr;
+    expr *lemma_expr = m.mk_eq(function_call, m.mk_true());
+    return mk_lemma(lemma_expr, m);
+}
+
+
 ///this is where everything starts
 lbool context::solve_core (unsigned from_lvl)
 {
 
     TRACE("xxx", tout << "Registered callbacks: " << m_callbacks.size() << "\n";);
     register_special_callback(*this);
-
 
     scoped_watch _w_(m_solve_watch);
     //if there is no query predicate, abort
@@ -3112,20 +3155,14 @@ lbool context::solve_core (unsigned from_lvl)
 
     unsigned max_level = m_max_level;
 
-    expr *transition = m_query->transition();
-    expr *function_call = to_app(to_app(transition)->get_arg(1))->get_arg(4);
-    expr *in_arg = to_app(function_call)->get_arg(1);
-    expr *out_arg = to_app(function_call)->get_arg(2);
-
-    arith_util _arith(m);
     for (auto &&rel: m_rels) {
-        expr *lhs = m.mk_eq(out_arg, _arith.mk_add(in_arg, _arith.mk_int(5)));
-        expr *lemma = m.mk_eq(lhs, function_call);
-        rel.m_value->add_lemma(lemma, infty_level(), false);
+        lemma_ref lemma = mk_special_lemma(rel.m_value->transition(), m);
+        lemma_ref x_lemma = mk_special_lemma2(rel.m_value->transition(), m);
 
-        expr *lhs2 = m.mk_eq(out_arg, _arith.mk_add(in_arg, _arith.mk_int(5)));
-        expr *lemma2 = m.mk_eq(lhs2, function_call);
-        rel.m_value->add_lemma(lemma2, infty_level(), true);
+        if (!lemma || !x_lemma) continue;
+
+        rel.m_value->add_lemma(lemma.get());
+        rel.m_value->add_lemma(x_lemma.get());
     }
 
     for (unsigned i = from_lvl; i < max_level; ++i) {
@@ -3802,7 +3839,7 @@ lbool context::expand_pob(pob& n, pob_ref_buffer &out)
             if (r && r->get_uninterpreted_tail_size() > 0) {
                 // do not trust reach_pred_used
                 for (unsigned i = 0, sz = reach_pred_used.size(); i < sz; ++i) {
-                    reach_pred_used[i] = false; 
+                    reach_pred_used[i] = false;
                 }
                 has_new_child = create_children(n, *r, *model, reach_pred_used, out);
             }
@@ -3964,7 +4001,7 @@ reach_fact *pred_transformer::mk_rf(pob& n, model &mdl, const datalog::rule& r)
     TRACE ("spacer",
            tout << "Reach fact, before QE:\n";
            tout << res << "\n";
-           tout << "Vars:\n" << vars << "\n";);        
+           tout << "Vars:\n" << vars << "\n";);
 
     {
         timeit _timer1 (is_trace_enabled("spacer_timeit"),

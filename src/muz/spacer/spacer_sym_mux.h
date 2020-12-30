@@ -29,7 +29,7 @@ Revision History:
 
 namespace spacer {
 class sym_mux {
-private:
+public:
     class sym_mux_entry {
     public:
         func_decl_ref m_main;

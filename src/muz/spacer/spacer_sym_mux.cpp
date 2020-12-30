@@ -148,7 +148,21 @@ public:
         app * a = to_app(s);
         func_decl * sym = a->get_decl();
         if (!m_parent.has_index(sym, m_from_idx)) {
-            SASSERT(!m_homogenous || !m_parent.is_muxed(sym));
+            if (!(!m_homogenous || !m_parent.is_muxed(sym))) {
+                TRACE("xxx",
+                      tout << "Fail: " << m_homogenous << "\n" << m_parent.is_muxed(sym) << "\n" << mk_pp(s, m) << "\n"
+                           << mk_pp(t, m) << "\n" << mk_pp(sym, m) << "\nParent\n" << std::endl;
+                              for (auto &&p: m_parent.m_entries) {
+                                  tout << mk_pp(p.m_key, m) << "\n" << mk_pp(p.m_value->m_main.get(), m) << "\n";
+                                  for (auto &&v: p.m_value->m_variants) {
+                                      tout << mk_pp(v, m) << "\n";
+                                  }
+                                  tout << "-------------" << "\n";
+                              }
+                              tout << "***************" << "\n";
+                );
+                SASSERT(!m_homogenous || !m_parent.is_muxed(sym));
+            }
             return false;
         }
         func_decl * tgt = m_parent.shift_decl(sym, m_from_idx, m_to_idx);

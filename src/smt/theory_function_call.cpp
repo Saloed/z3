@@ -672,7 +672,7 @@ namespace smt {
 
         arith_util _arith(m);
         expr *x = _arith.mk_add(call.in_args[0], _arith.mk_int(5));
-
+        return nullptr;
         if (expr_str == "(function_call query!0_3_n query!0_0_n query!0_2_n)") {
             return m.mk_true();
 //            return m.mk_eq(to_app(expression)->get_arg(2), _arith.mk_add(to_app(expression)->get_arg(1), _arith.mk_int(5)));
