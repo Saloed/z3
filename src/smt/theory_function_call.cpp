@@ -670,73 +670,25 @@ namespace smt {
         expr_str_builder << mk_pp(expression, m);
         auto &&expr_str = expr_str_builder.str();
 
-        arith_util _arith(m);
-        expr *x = _arith.mk_add(call.in_args[0], _arith.mk_int(5));
-        return nullptr;
         if (expr_str == "(function_call query!0_3_n query!0_0_n query!0_2_n)") {
             return m.mk_true();
-//            return m.mk_eq(to_app(expression)->get_arg(2), _arith.mk_add(to_app(expression)->get_arg(1), _arith.mk_int(5)));
-        } else if (expr_str == "(function_call aux!2_n recursion_0_n aux!3_n)"){
-            return m.mk_true();
-//            return m.mk_eq(to_app(expression)->get_arg(2), _arith.mk_add(to_app(expression)->get_arg(1), _arith.mk_int(5)));
-        }
-        return nullptr;
-
-        if (expr_str == "(<= query!0_2_n 17)") {
-            return _arith.mk_le(x, _arith.mk_int(17));
-        }
-        if (expr_str == "(<= query!0_2_n 99)") {
-            return _arith.mk_le(x, _arith.mk_int(99));
-        } else if (expr_str == "(>= (+ query!0_2_n (* (- 1) recursion_0_1)) (- 1))") {
-            expr *recursion_var = to_app(to_app(to_app(expression)->get_arg(0))->get_arg(1))->get_arg(1);
-            return _arith.mk_ge(_arith.mk_add(x, _arith.mk_mul(_arith.mk_int(-1), recursion_var)), _arith.mk_int(-1));
-        } else if (expr_str == "(<= (+ query!0_2_n (* (- 1) recursion_0_1)) (- 1))") {
-            expr *recursion_var = to_app(to_app(to_app(expression)->get_arg(0))->get_arg(1))->get_arg(1);
-            return _arith.mk_le(_arith.mk_add(x, _arith.mk_mul(_arith.mk_int(-1), recursion_var)), _arith.mk_int(-1));
-        } else if (expr_str == "(= (+ query!0_2_n (* (- 1) recursion_0_1)) (- 1))") {
-            expr *recursion_var = to_app(to_app(to_app(expression)->get_arg(0))->get_arg(1))->get_arg(1);
-            return _arith.mk_eq(_arith.mk_add(x, _arith.mk_mul(_arith.mk_int(-1), recursion_var)), _arith.mk_int(-1));
-        } else if (expr_str == "(function_call query!0_3_n query!0_0_n query!0_2_n)") {
-            return m.mk_true();
-        } else if (expr_str == "(= recursion_0_1 (+ 1 query!0_2_n))") {
-            expr *recursion_var = to_app(expression)->get_arg(0);
-            return m.mk_eq(recursion_var, _arith.mk_add(_arith.mk_int(1), x));
-        } else if (expr_str == "(<= (+ recursion_0_1 (* (- 1) (+ 1 query!0_2_n))) 0)") {
-            expr *recursion_var = to_app(to_app(expression)->get_arg(0))->get_arg(0);
-            expr *some = _arith.mk_mul(_arith.mk_int(-1), _arith.mk_add(_arith.mk_int(1), x));
-            return _arith.mk_le(_arith.mk_add(recursion_var, some), _arith.mk_int(0));
-        } else if (expr_str == "(>= (+ recursion_0_1 (* (- 1) (+ 1 query!0_2_n))) 0)") {
-            expr *recursion_var = to_app(to_app(expression)->get_arg(0))->get_arg(0);
-            expr *some = _arith.mk_mul(_arith.mk_int(-1), _arith.mk_add(_arith.mk_int(1), x));
-            return _arith.mk_ge(_arith.mk_add(recursion_var, some), _arith.mk_int(0));
-        } else if (expr_str == "(<= aux!3_n 17)") {
-            return _arith.mk_le(x, _arith.mk_int(17));
         } else if (expr_str == "(function_call aux!2_n recursion_0_n aux!3_n)") {
             return m.mk_true();
-        } else if (expr_str == "(= (+ recursion_0_0 (* (- 1) aux!3_n)) 1)") {
-            expr *recursion_var = to_app(to_app(expression)->get_arg(0))->get_arg(0);
-            return m.mk_eq(_arith.mk_add(recursion_var, _arith.mk_mul(_arith.mk_int(-1), x)), _arith.mk_int(1));
-        } else if (expr_str == "(= recursion_0_0 (+ 1 aux!3_n))") {
-            expr *recursion_var = to_app(expression)->get_arg(0);
-            return m.mk_eq(recursion_var, _arith.mk_add(_arith.mk_int(1), x));
-        } else if (expr_str == "(<= (+ recursion_0_0 (* (- 1) aux!3_n)) 1)") {
-            expr *recursion_var = to_app(to_app(expression)->get_arg(0))->get_arg(0);
-            return _arith.mk_le(_arith.mk_add(recursion_var, _arith.mk_mul(_arith.mk_int(-1), x)), _arith.mk_int(1));
-        } else if (expr_str == "(>= (+ recursion_0_0 (* (- 1) aux!3_n)) 1)") {
-            expr *recursion_var = to_app(to_app(expression)->get_arg(0))->get_arg(0);
-            return _arith.mk_ge(_arith.mk_add(recursion_var, _arith.mk_mul(_arith.mk_int(-1), x)), _arith.mk_int(1));
-        } else if (expr_str == "(<= (+ recursion_0_0 (* (- 1) (+ 1 aux!3_n))) 0)") {
-            expr *recursion_var = to_app(to_app(expression)->get_arg(0))->get_arg(0);
-            expr *some = _arith.mk_mul(_arith.mk_int(-1), _arith.mk_add(_arith.mk_int(1), x));
-            return _arith.mk_le(_arith.mk_add(recursion_var, some), _arith.mk_int(0));
-        } else if (expr_str == "(>= (+ recursion_0_0 (* (- 1) (+ 1 aux!3_n))) 0)") {
-            expr *recursion_var = to_app(to_app(expression)->get_arg(0))->get_arg(0);
-            expr *some = _arith.mk_mul(_arith.mk_int(-1), _arith.mk_add(_arith.mk_int(1), x));
-            return _arith.mk_ge(_arith.mk_add(recursion_var, some), _arith.mk_int(0));
-        } else {
-            std::cout << "Unexpected lemma: " << expr_str << " Call: " << mk_pp(call.call, m) << std::endl;
-            return nullptr;
         }
+
+        std::vector<std::string> known_vars = {"query!0_2_n", "aux!3_n"};
+
+        arith_util _arith(m);
+        expr *x = _arith.mk_add(call.in_args[0], _arith.mk_int(5));
+
+        for (auto &&var: known_vars) {
+            if (expr_str.find(var) == std::string::npos) continue;
+            expr *xxx_var = m.mk_const(var, _arith.mk_int());
+            return replace_expr(expression, xxx_var, x);
+        }
+
+        std::cout << "Unexpected lemma: " << expr_str << " Call: " << mk_pp(call.call, m) << std::endl;
+        return nullptr;
     }
 
     void theory_function_call::replace_literal(literal &lit, theory_function_call::call_info &call, expr *argument) {

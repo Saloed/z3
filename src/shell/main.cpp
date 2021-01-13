@@ -335,7 +335,10 @@ int STD_CALL main(int argc, char ** argv) {
         enable_trace("xxx");
 //        enable_trace("setup");
 //         enable_trace("spacer");
-//         enable_trace("rewriter");
+
+//         enable_trace("rewriter_visit");
+//         enable_trace("rewriter_subst");
+         enable_trace("rewriter");
 //         enable_trace("qe");
 
 

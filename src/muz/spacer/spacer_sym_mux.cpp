@@ -61,6 +61,9 @@ void sym_mux::ensure_capacity(sym_mux_entry &entry, unsigned sz) const {
     while (entry.m_variants.size() < sz) {
         unsigned idx = entry.m_variants.size();
         entry.m_variants.push_back (mk_variant(entry.m_main, idx));
+        if (idx == 2) {
+            TRACE("xxx", tout << "Insert 2: " << mk_pp(entry.m_variants.back(), m) << "\n";);
+        }
         m_muxes.insert(entry.m_variants.back(), std::make_pair(&entry, idx));
     }
 }
@@ -144,30 +147,41 @@ public:
 
     bool get_subst(expr * s, expr * & t, proof * & t_pr)
     {
-        if (!is_app(s)) { return false; }
+        if (!is_app(s)) {
+            TRACE("xxx", tout << "False because not app: " << mk_pp(s, m) << "\n";);
+            return false;
+        }
         app * a = to_app(s);
         func_decl * sym = a->get_decl();
+
+//        if (m_from_idx != 0) {
+//            TRACE("xxx", tout << "From: " << m_from_idx << " : " << mk_pp(s, m) << "\n";);
+//        }
+
         if (!m_parent.has_index(sym, m_from_idx)) {
             if (!(!m_homogenous || !m_parent.is_muxed(sym))) {
-                TRACE("xxx",
-                      tout << "Fail: " << m_homogenous << "\n" << m_parent.is_muxed(sym) << "\n" << mk_pp(s, m) << "\n"
-                           << mk_pp(t, m) << "\n" << mk_pp(sym, m) << "\nParent\n" << std::endl;
-                              for (auto &&p: m_parent.m_entries) {
-                                  tout << mk_pp(p.m_key, m) << "\n" << mk_pp(p.m_value->m_main.get(), m) << "\n";
-                                  for (auto &&v: p.m_value->m_variants) {
-                                      tout << mk_pp(v, m) << "\n";
-                                  }
-                                  tout << "-------------" << "\n";
-                              }
-                              tout << "***************" << "\n";
-                );
+                std::pair<sym_mux::sym_mux_entry *, unsigned> entry;
+                if (m_parent.m_muxes.find(sym, entry)) {
+                    TRACE("xxx", tout << "Found entry\nEntry: " << entry.second << "\nNeed: " << m_from_idx << "\nTo: "
+                                      << m_to_idx << "\n";);
+                    TRACE("xxx", tout << "Variants:\n";
+                            for (auto &&var: entry.first->m_variants) {
+                                tout << mk_pp(var, m) << "\n";
+                            }
+                    );
+                } else {
+                    TRACE("xxx", tout << "No entry\n";);
+                }
+                TRACE("xxx", tout << "Fail: " << mk_pp(s, m) << "\n";);
                 SASSERT(!m_homogenous || !m_parent.is_muxed(sym));
             }
+            TRACE("xxx", tout << "False because no idx: " << mk_pp(s, m) << "\n";);
             return false;
         }
         func_decl * tgt = m_parent.shift_decl(sym, m_from_idx, m_to_idx);
         t = m.mk_app(tgt, a->get_args());
         m_pinned.push_back(t);
+        TRACE("xxx", tout << "True: " << mk_pp(s, m) << "\n";);
         return true;
     }
 };

@@ -264,6 +264,9 @@ pob *derivation::create_next_child(model &mdl) {
     expr_ref_vector summaries (m);
     app_ref_vector vars(m);
 
+    XXX("Next child\n")
+    XXX("Model:\n"; tout << mdl << "\n")
+
     // -- find first may premise
     while (m_active < m_premises.size() && m_premises[m_active].is_must()) {
         summaries.push_back (m_premises[m_active].get_summary ());
@@ -276,6 +279,20 @@ pob *derivation::create_next_child(model &mdl) {
     summaries.push_back (m_trans);
     m_trans = mk_and (summaries);
     summaries.reset ();
+
+    XXX("Premises:\n";
+        for (auto &&premis: m_premises) {
+            tout << "Oidx: " << premis.get_oidx() << " : " << mk_pp(premis.get_summary(), m) << "\n";
+        }
+    )
+
+    XXX("Trans:\n" << mk_pp(m_trans, m) << "\n")
+
+    XXX("Vars:\n";
+        for (auto &&var: vars) {
+            tout << mk_pp(var, m) << "\n";
+        }
+    )
 
     if (!vars.empty()) {
         timeit _timer1 (is_trace_enabled("spacer_timeit"),
@@ -331,6 +348,11 @@ pob *derivation::create_next_child(model &mdl) {
         exist_skolemize(post.get(), vars, post);
     }
 
+    TRACE("xxx", tout << "Call o2n: " << mk_pp(post.get(), m) << "\n";
+            tout << "Active: " << m_active << "\n";
+            auto &&premise = m_premises[m_active];
+            tout << "Premise: " << mk_pp(premise.get_summary(), m) << " Oidx: " << premise.get_oidx() << "\n";
+    );
     get_manager ().formula_o2n (post.get (), post,
                                 m_premises [m_active].get_oidx (),
                                 vars.empty());
@@ -3124,6 +3146,7 @@ lemma_ref mk_special_lemma(expr *lemma_source, ast_manager &m) {
 
     arith_util _arith(m);
     expr *lemma_expr = m.mk_eq(out_arg, _arith.mk_add(in_arg, _arith.mk_int(5)));
+    TRACE("xxx", tout << "Generate lemma: " << mk_pp(lemma_expr, m) << "\n";);
     return mk_lemma(lemma_expr, m);
 }
 
