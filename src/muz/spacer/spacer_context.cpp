@@ -55,6 +55,8 @@ Notes:
 #include "muz/spacer/spacer_sat_answer.h"
 #include "spacer_callback.h"
 
+#include "function_call_utils.h"
+
 #define WEAKNESS_MAX 65535
 
 namespace spacer {
@@ -364,6 +366,14 @@ pob *derivation::create_next_child(model &mdl) {
     pob *n = m_premises[m_active].pt().mk_pob(&m_parent,
                                               prev_level (m_parent.level ()),
                                               m_parent.depth (), post, vars);
+
+    expr *function_call = find_function_call(m_premises[m_active].pt().transition(), m);
+    XXX("Try generate lemma for call: " << mk_pp(function_call, m) << " and post: " << mk_pp(post, m) << "\n")
+    lemma_ref_vector fc_lemmas = mk_function_call_lemmas(function_call, post, m);
+    for (auto &&fc_lemma: fc_lemmas) {
+        m_premises[m_active].pt().add_lemma(fc_lemma);
+    }
+
     IF_VERBOSE (1, verbose_stream ()
                 << "\n\tcreate_child: " << n->pt ().head ()->get_name ()
                 << " (" << n->level () << ", " << n->depth () << ") "
@@ -1373,6 +1383,15 @@ void pred_transformer::mbp(app_ref_vector &vars, expr_ref &fml, model &mdl,
     scoped_watch _t_(m_mbp_watch);
 //    TRACE("xxx", tout << "Use native mbp: " << use_native_mbp() << "\n";);
     qe_project(m, vars, fml, mdl, reduce_all_selects, use_native_mbp(), !force);
+    if (!fml) return;
+    XXX("Mbp result: " << mk_pp(fml.get(), m) << "\n")
+    expr *function_call = find_function_call(transition(), m);
+    XXX("Try generate lemma for call: " << mk_pp(function_call, m) << " and formula: " << mk_pp(fml.get(), m)
+                                        << "\n")
+    lemma_ref_vector fc_lemmas = mk_function_call_lemmas(function_call, fml.get(), m);
+    for (auto &&fc_lemma: fc_lemmas) {
+        add_lemma(fc_lemma);
+    }
 }
 
 //
@@ -3115,51 +3134,6 @@ void register_special_callback(context &ctx) {
     ctx.callbacks().push_back(callback);
 }
 
-expr *find_function_call(expr *root, family_id fid) {
-    if (!is_app(root)) return nullptr;
-    app *root_as_app = to_app(root);
-    if (root_as_app->is_app_of(fid, OP_FUNCTION_CALL)) {
-        return root_as_app;
-    }
-    expr *result = nullptr;
-
-    for (unsigned i = 0; i < root_as_app->get_num_args(); ++i) {
-        expr *arg = root_as_app->get_arg(i);
-        result = find_function_call(arg, fid);
-        if (result != nullptr) break;
-    }
-    return result;
-}
-
-lemma_ref mk_lemma(expr* lemma_expr, ast_manager& m){
-    lemma_ref lem = alloc(lemma, m, lemma_expr, infty_level());
-    lem->set_background(false);
-    return lem;
-}
-
-lemma_ref mk_special_lemma(expr *lemma_source, ast_manager &m) {
-    family_id fc_id = m.mk_family_id("function_call");
-    expr *function_call = find_function_call(lemma_source, fc_id);
-    if (function_call == nullptr) return nullptr;
-    expr *in_arg = to_app(function_call)->get_arg(1);
-    expr *out_arg = to_app(function_call)->get_arg(2);
-
-    arith_util _arith(m);
-    expr *lemma_expr = m.mk_eq(out_arg, _arith.mk_add(in_arg, _arith.mk_int(5)));
-    TRACE("xxx", tout << "Generate lemma: " << mk_pp(lemma_expr, m) << "\n";);
-    return mk_lemma(lemma_expr, m);
-}
-
-
-lemma_ref mk_special_lemma2(expr *lemma_source, ast_manager &m) {
-    family_id fc_id = m.mk_family_id("function_call");
-    expr *function_call = find_function_call(lemma_source, fc_id);
-    if (function_call == nullptr) return nullptr;
-    expr *lemma_expr = m.mk_eq(function_call, m.mk_true());
-    return mk_lemma(lemma_expr, m);
-}
-
-
 ///this is where everything starts
 lbool context::solve_core (unsigned from_lvl)
 {
@@ -3179,12 +3153,12 @@ lbool context::solve_core (unsigned from_lvl)
     unsigned max_level = m_max_level;
 
     for (auto &&rel: m_rels) {
-        lemma_ref lemma = mk_special_lemma(rel.m_value->transition(), m);
-        lemma_ref x_lemma = mk_special_lemma2(rel.m_value->transition(), m);
+        lemma_ref i_lemma = mk_initial_lemma(rel.m_value->transition(), m);
+        lemma_ref x_lemma = mk_function_call_is_true_lemma(rel.m_value->transition(), m);
 
-        if (!lemma || !x_lemma) continue;
+        if (!i_lemma || !x_lemma) continue;
 
-        rel.m_value->add_lemma(lemma.get());
+        rel.m_value->add_lemma(i_lemma.get());
         rel.m_value->add_lemma(x_lemma.get());
     }
 

@@ -666,6 +666,8 @@ namespace smt {
             return m.mk_not(negated_precondition);
         }
 
+        return nullptr;
+
         std::stringstream expr_str_builder;
         expr_str_builder << mk_pp(expression, m);
         auto &&expr_str = expr_str_builder.str();

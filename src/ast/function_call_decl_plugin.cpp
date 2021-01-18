@@ -68,32 +68,34 @@ func_decl *function_call_decl_plugin::mk_function_call(unsigned int arity, sort 
         m_manager->raise_exception("call takes at least single argument");
         return nullptr;
     }
-    sort *s = args[0];
-    unsigned num_parameters = s->get_num_parameters();
-    parameter const *parameters = s->get_parameters();
-
-    if (num_parameters + 1 != arity) {
-        std::stringstream strm;
-        strm << "function call requires " << num_parameters + 1 << " arguments, but was provided with " << arity
-             << " arguments";
-        m_manager->raise_exception(strm.str());
-        return nullptr;
-    }
-    ptr_buffer<sort> new_domain; // we need this because of coercions.
-    new_domain.push_back(s);
-    for (unsigned i = 0; i < num_parameters; ++i) {
-        if (!parameters[i].is_ast() ||
-            !is_sort(parameters[i].get_ast()) ||
-            !m_manager->compatible_sorts(args[i + 1], to_sort(parameters[i].get_ast()))) {
-            std::stringstream strm;
-            strm << "argument sort " << sort_ref(args[i + 1], *m_manager) << " and parameter ";
-            strm << parameter_pp(parameters[i], *m_manager) << " do not match";
-            m_manager->raise_exception(strm.str());
-            return nullptr;
-        }
-        new_domain.push_back(to_sort(parameters[i].get_ast()));
-    }
-    SASSERT(new_domain.size() == arity);
-    return m_manager->mk_func_decl(m_call_sym, arity, new_domain.c_ptr(), m_manager->mk_bool_sort(),
+//    sort *s = args[0];
+//    unsigned num_parameters = s->get_num_parameters();
+//    parameter const *parameters = s->get_parameters();
+//
+//    if (num_parameters + 1 != arity) {
+//        std::stringstream strm;
+//        strm << "function call requires " << num_parameters + 1 << " arguments, but was provided with " << arity
+//             << " arguments";
+//        m_manager->raise_exception(strm.str());
+//        return nullptr;
+//    }
+//    ptr_buffer<sort> new_domain; // we need this because of coercions.
+//    new_domain.push_back(s);
+//    for (unsigned i = 0; i < num_parameters; ++i) {
+//        if (!parameters[i].is_ast() ||
+//            !is_sort(parameters[i].get_ast()) ||
+//            !m_manager->compatible_sorts(args[i + 1], to_sort(parameters[i].get_ast()))) {
+//            std::stringstream strm;
+//            strm << "argument sort " << sort_ref(args[i + 1], *m_manager) << " and parameter ";
+//            strm << parameter_pp(parameters[i], *m_manager) << " do not match";
+//            m_manager->raise_exception(strm.str());
+//            return nullptr;
+//        }
+//        new_domain.push_back(to_sort(parameters[i].get_ast()));
+//    }
+//    SASSERT(new_domain.size() == arity);
+//    return m_manager->mk_func_decl(m_call_sym, arity, new_domain.c_ptr(), m_manager->mk_bool_sort(),
+//                                   func_decl_info(m_family_id, OP_FUNCTION_CALL));
+    return m_manager->mk_func_decl(m_call_sym, arity, args, m_manager->mk_bool_sort(),
                                    func_decl_info(m_family_id, OP_FUNCTION_CALL));
 }
