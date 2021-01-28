@@ -75,9 +75,6 @@ namespace smt {
         void set_reason_unknown(char const* msg) { m_unknown = msg; }
         void set_progress_callback(progress_callback *callback);
 
-        expr* find_precondition(expr* e);
-
-
     public:
         ast_manager &               m;
         smt_params &                m_fparams;

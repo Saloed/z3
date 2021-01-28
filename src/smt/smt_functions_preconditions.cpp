@@ -103,28 +103,4 @@ namespace smt {
         }
     }
 
-    expr *context::find_precondition(expr *e) {
-        TRACE("spacer", tout << "Try find precondition for:\n" << mk_pp(e, m) << "\n";);
-        if (e == nullptr) return nullptr;
-
-        internalize(e, is_quantifier(e));
-
-        theory_function_call *th = nullptr;
-        for (auto *_th: m_theory_set) {
-            if (strcmp(_th->get_name(), "function-call") == 0) {
-                th = dynamic_cast<theory_function_call *>(_th);
-                break;
-            }
-        }
-
-        if (th == nullptr) {
-            TRACE("xxx", tout << "No theory" << "\n";);
-            UNREACHABLE();
-        }
-
-        expr *precondition = th->find_precondition_for_expr(e);
-        TRACE("xxx", tout << "Precondition for: \n" << mk_pp(e, m) << "\nIS\n" << mk_pp(precondition, m) << "\n";);
-
-        return precondition;
-    }
 }

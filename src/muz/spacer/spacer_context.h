@@ -32,8 +32,6 @@ Notes:
 
 #include "muz/base/fp_params.hpp"
 
-#include "solver/solver_na2as.h"
-
 namespace datalog {
     class rule_set;
     class context;
@@ -454,7 +452,7 @@ public:
 
     void add_rule(datalog::rule* r) {m_rules.push_back(r);}
     void add_use(pred_transformer* pt) {if (!m_use.contains(pt)) {m_use.insert(pt);}}
-    void initialize(decl2rel const &pts);
+    void initialize(decl2rel const& pts);
 
     func_decl* head() const {return m_head;}
     ptr_vector<datalog::rule> const& rules() const {return m_rules;}
@@ -769,6 +767,8 @@ class derivation {
         /// The new summary is over n-variables.
         void set_summary(expr * summary, bool must,
                          const ptr_vector<app> *aux_vars = nullptr);
+
+        std::ostream& display(std::ostream& out) const;
     };
 
 
@@ -812,6 +812,7 @@ public:
     manager &get_manager () const {return m_parent.get_manager ();}
     context &get_context() const {return m_parent.get_context();}
     pred_transformer &pt() const {return m_parent.pt();}
+    std::ostream& display (std::ostream& out) const;
 };
 
 
@@ -959,7 +960,6 @@ class context {
     scoped_ptr<solver_pool> m_pool1;
     scoped_ptr<solver_pool> m_pool2;
 
-    scoped_ptr<solver_na2as> m_precondition_solver;
 
     random_gen           m_random;
     spacer_children_order m_children_order;
@@ -1167,8 +1167,6 @@ public:
     solver* mk_solver0() {return m_pool0->mk_solver();}
     solver* mk_solver1() {return m_pool1->mk_solver();}
     solver* mk_solver2() {return m_pool2->mk_solver();}
-
-    solver_na2as* mk_precondition_solver(){return m_precondition_solver.get();}
 };
 
 inline bool pred_transformer::use_native_mbp () {return ctx.use_native_mbp ();}

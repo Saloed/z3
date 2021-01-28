@@ -46,6 +46,7 @@ z3_add_component(ast
     used_vars.cpp
     value_generator.cpp
     well_sorted.cpp
+    function_call_context.cpp
   COMPONENT_DEPENDENCIES
     polynomial
     util # Unnecessary? polynomial already depends on util

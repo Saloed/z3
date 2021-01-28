@@ -254,7 +254,7 @@ namespace smt {
         }
 
         expr *find_precondition(expr *e) {
-            return m_kernel.find_precondition(e);
+            return e;
         }
     };
 

@@ -112,21 +112,11 @@ namespace smt {
 
         void mk_th_axiom(literal& lit);
 
-        void replace_literal(literal &lit, call_info &call, expr *argument);
-
-        void analyze_all_exprs_via_replace();
-
         ptr_vector<expr> least_logical_subexpr_containing_expr(expr *e, expr *target);
-
-        expr *find_precondition(expr *expression, call_info &call, expr *argument);
 
         expr *replace_expr(expr *original, expr *from, expr *to);
 
-        ptr_vector<expr> least_logical_negated_subexpr_containing_expr(expr *e, expr *target);
-
         void analyze_all_exprs_via_axiom();
-
-        expr* find_precondition_for_expr(expr* e);
 
     };
 }
