@@ -52,8 +52,7 @@ Notes:
 #include "muz/spacer/spacer_qe_project.h"
 #include "muz/spacer/spacer_sat_answer.h"
 #include "spacer_callback.h"
-
-#include "function_call_utils.h"
+#include "ast/function_call_context.h"
 
 #define WEAKNESS_MAX 65535
 
@@ -4000,7 +3999,7 @@ bool context::create_children(pob& n, datalog::rule const& r,
     forms.push_back(pt.get_transition(r));
     forms.push_back(n.post());
 
-    add_implicant_forms_if_needed(forms);
+    m.get_function_call_context()->extend_forms_with_generated_axioms(forms);
 
     expr_ref_vector lits = compute_implicant_literals (mdl, forms);
 

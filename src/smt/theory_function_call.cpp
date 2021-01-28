@@ -206,7 +206,7 @@ namespace smt {
     void theory_function_call::analyze_all_exprs_via_axiom() {
         vector<function_call::call_info> registered_calls;
         for (auto &&call: known_calls) {
-            auto &&expanded_call = function_call::function_call_context_provider::get_context()->expand_call(call, m);
+            auto &&expanded_call = m.get_function_call_context()->expand_call(call);
             registered_calls.push_back(expanded_call);
         }
 
@@ -245,16 +245,14 @@ namespace smt {
 
         for (auto &&info : relevant_exprs) {
             for (auto &&e: info.exprs) {
-                auto &&precondition_ref = function_call::function_call_context_provider::get_context()->mk_call_axiom_for_expr(
-                        e, info.call, m
-                );
+                auto &&precondition_ref = m.get_function_call_context()->mk_call_axiom_for_expr(e, info.call);
                 if (!precondition_ref) continue;
 
                 expr *precondition = precondition_ref.get();
 
                 ctx.internalize(precondition, is_quantifier(precondition));
                 ctx.mark_as_relevant(precondition);
-                m.inc_ref(precondition);
+//                m.inc_ref(precondition);
 
                 literal lit = mk_eq(e, precondition, is_quantifier(precondition));
                 mk_th_axiom(lit);

@@ -29,6 +29,7 @@ Revision History:
 #include "ast/array_decl_plugin.h"
 #include "ast/ast_translation.h"
 #include "util/z3_version.h"
+#include "ast/function_call_context.h"
 
 
 // -----------------------------------
@@ -1464,6 +1465,8 @@ void ast_manager::init() {
     inc_ref(m_true);
     m_false = mk_const(m_basic_family_id, OP_FALSE);
     inc_ref(m_false);
+
+    m_function_call_context = alloc(function_call::function_call_context, *this);
 }
 
 

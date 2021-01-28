@@ -63,6 +63,10 @@ Revision History:
 class ast;
 class ast_manager;
 
+namespace function_call {
+    class function_call_context;
+}
+
 /**
    \brief Generic exception for AST related errors.
 
@@ -1552,6 +1556,8 @@ protected:
     ast_manager *             m_format_manager; // hack for isolating format objects in a different manager.
     symbol                    m_lambda_def;
 
+    function_call::function_call_context* m_function_call_context;
+
     void init();
 
     bool coercion_needed(func_decl * decl, unsigned num_args, expr * const * args);
@@ -1647,6 +1653,8 @@ public:
     family_id get_user_sort_family_id() const { return m_user_sort_family_id; }
 
     user_sort_plugin * get_user_sort_plugin() const { return static_cast<user_sort_plugin*>(get_plugin(m_user_sort_family_id)); }
+
+    function_call::function_call_context *get_function_call_context() const { return m_function_call_context; }
 
     /**
        \brief Debugging support method: set the next expression identifier to be the least value id' s.t.
