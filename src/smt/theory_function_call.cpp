@@ -172,8 +172,6 @@ namespace smt {
 
     void print_expr(std::ostream &out, expr *e, unsigned i, context &ctx) {
         out << i << ": " << mk_pp(e, ctx.get_manager()) << "\n";
-        b_justification js = ctx.m_bdata[i].justification();
-        ctx.display_justification(out, js) << "\n";
     }
 
 
@@ -192,12 +190,12 @@ namespace smt {
     }
 
 
-    proof *get_proof_if_available(justification *js) {
-        if (js == nullptr) return nullptr;
-        if (strcmp(js->get_name(), "proof-wrapper") != 0) return nullptr;
-        auto *pw = dynamic_cast<smt::justification_proof_wrapper *>(js);
-        return pw->m_proof;
-    }
+//    proof *get_proof_if_available(justification *js) {
+//        if (js == nullptr) return nullptr;
+//        if (strcmp(js->get_name(), "proof-wrapper") != 0) return nullptr;
+//        auto *pw = dynamic_cast<smt::justification_proof_wrapper *>(js);
+//        return pw->m_proof;
+//    }
 
     struct axiom_expr_info {
         ptr_vector<expr> exprs;

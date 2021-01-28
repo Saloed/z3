@@ -120,10 +120,6 @@ namespace smt {
             return m_kernel.check(cube, clause);
         }
 
-        void setup_ctx() {
-            m_kernel.setup_context(false);
-        }
-
         lbool get_consequences(expr_ref_vector const& assumptions, expr_ref_vector const& vars, expr_ref_vector& conseq, expr_ref_vector& unfixed) {
             return m_kernel.get_consequences(assumptions, vars, conseq, unfixed);
         }
@@ -253,9 +249,6 @@ namespace smt {
             return m_kernel.user_propagate_register(e);
         }
 
-        expr *find_precondition(expr *e) {
-            return e;
-        }
     };
 
     kernel::kernel(ast_manager & m, smt_params & fp, params_ref const & p) {
@@ -482,14 +475,6 @@ namespace smt {
 
     unsigned kernel::user_propagate_register(expr* e) {
         return m_imp->user_propagate_register(e);
-    }
-
-    expr *kernel::find_precondition(expr *e) {
-        return m_imp->find_precondition(e);
-    }
-
-    void kernel::setup_ctx() {
-        m_imp->setup_ctx();
     }
 
 };

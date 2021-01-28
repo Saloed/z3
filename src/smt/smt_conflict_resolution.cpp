@@ -968,31 +968,13 @@ namespace smt {
             if (js.get_kind() == b_justification::CLAUSE) {
                 clause * cls       = js.get_clause();
                 justification * js = cls->get_justification();
-
-//                if (strcmp(typeid(*js).name(), "class smt::justification_proof_wrapper") == 0) {
-//                    std::cout << "JS is proof wrapper " << std::endl;
-//                    auto *xx = dynamic_cast<smt::justification_proof_wrapper *>(js);
-//                    std::cout << mk_pp(xx->mk_proof(*this), m) << std::endl;
-//                }
-
                 SASSERT(js);
                 proof * pr         = get_proof(js);
-
-//                std::cout << "JS: " << js << std::endl;
-//                js->display_debug_info(*this, std::cout);
-//                m_ctx.display_clause_smt2(std::cout, *cls);
-//                std::cout << "\nProof:\n" << mk_pp(pr, m) << std::endl;
-//                std::cout << std::endl;
-
                 ptr_buffer<proof> prs;
                 bool visited       = pr != nullptr;
                 TRACE("get_proof_bug", if (pr != 0) tout << js->get_name() << "\n";);
                 CTRACE("get_proof_bug_after", invocation_counter >= DUMP_AFTER_NUM_INVOCATIONS, if (pr != 0) tout << js->get_name() << "\n";);
                 CTRACE("get_proof_bug_after", invocation_counter >= DUMP_AFTER_NUM_INVOCATIONS, if (pr != 0) js->display_debug_info(*this, tout););
-
-
-//                TRACE("xxx", tout << "Push 0: " << mk_pp(pr, m) << std::endl;);
-
                 prs.push_back(pr);
 
                 unsigned num_lits = cls->get_num_literals();
@@ -1005,9 +987,6 @@ namespace smt {
                     else {
                         SASSERT(l == cls->get_literal(1));
                         proof * pr = get_proof(~cls->get_literal(0));
-
-//                        TRACE("xxx", tout << "Push 1: " << mk_pp(pr, m) << std::endl;);
-
                         prs.push_back(pr);
                         if (!pr)
                             visited = false;
@@ -1016,9 +995,6 @@ namespace smt {
                 }
                 for (; i < num_lits; i++) {
                     proof * pr = get_proof(~cls->get_literal(i));
-
-//                    TRACE("xxx", tout << " Push 2: " << i << " " << mk_pp(pr, m) << std::endl;);
-
                     prs.push_back(pr);
                     if (!pr)
                         visited = false;
@@ -1085,10 +1061,6 @@ namespace smt {
         }
         SASSERT(js != nullptr);
         TRACE("proof_gen_bug", tout << js << "\n";);
-//        TRACE("xxx", tout << "Add todo js: " << js << " " << js->get_name() << "\n" << mk_pp(js->mk_proof(*this), m) << std::endl;);
-//        std::stringstream xxx;
-//        xxx << mk_pp(js->mk_proof(*this), m);
-
         m_todo_pr.push_back(tp_elem(js));
         return nullptr;
     }
@@ -1132,19 +1104,8 @@ namespace smt {
             }
             for (; i < num_lits; i++) {
                 SASSERT(cls->get_literal(i) != l);
-                app *prf = get_proof(~cls->get_literal(i));
-                if (prf == nullptr)
+                if (get_proof(~cls->get_literal(i)) == nullptr)
                     visited = false;
-//                TRACE("xxx",
-//                      tout << "check exists proof for literal: ";
-//                              m_ctx.display_literal_smt2(tout, ~cls->get_literal(i));
-//                              if (prf == nullptr) {
-//                                  tout << "Proof: null";
-//                              } else {
-//                                  tout << "Proof: " << mk_pp(prf, m);
-//                              }
-//                              tout << std::endl;
-//                );
             }
             return visited;
         }
@@ -1334,7 +1295,6 @@ namespace smt {
                 else {
                     proof * pr         = js->mk_proof(*this);
                     if (pr) {
-//                        TRACE("xxx", tout << "save proof for js: " << js << " " << js->get_name() << "\n" << mk_pp(pr, m) << std::endl;);
                         m_todo_pr.pop_back();
                         m_new_proofs.push_back(pr);
                         TRACE("proof_gen_bug", tout << "js2pr_saved: #" << js << "\n";);
@@ -1350,19 +1310,6 @@ namespace smt {
                     m_todo_pr.pop_back();
                 else {
                     b_justification js = m_ctx.get_justification(l.var());
-                    std::stringstream x;
-                    m_ctx.display_literal_smt2(x, l);
-                    std::string xx = x.str();
-//                    TRACE("xxx", m_ctx.display_literal_smt2(tout, l) << " \n " << js.get_kind(););
-//                    TRACE("xxx", if (js.get_kind() == b_justification::CLAUSE) {
-//                        tout << l.var() << std::endl;
-//                        clause *cls = js.get_clause();
-//                        if (cls != nullptr) {
-//                            m_ctx.display_clause_smt2(tout, *cls);
-//                            justification* cjs = cls->get_justification();
-//                            tout << "\nJustification in cls: \n" << mk_pp(cjs->mk_proof(*this), m) << std::endl;
-//                        }
-//                    });
                     if (visit_b_justification(l, js)) {
                         m_todo_pr.pop_back();
                         mk_proof(l, js);

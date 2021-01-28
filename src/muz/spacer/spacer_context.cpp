@@ -1451,7 +1451,7 @@ lbool pred_transformer::is_reachable(pob& n, expr_ref_vector* core,
         }
     }
 
-    TRACE("spacer",
+    CTRACE("spacer", !reach_assumps.empty(),
         tout << "reach assumptions\n" << reach_assumps << "\n";);
 
     // check local reachability;
@@ -1461,7 +1461,7 @@ lbool pred_transformer::is_reachable(pob& n, expr_ref_vector* core,
     lbool is_sat = m_solver->check_assumptions (post, reach_assumps,
                                                m_transition_clause, 1, &bg, 0);
 
-    TRACE("spacer",
+    CTRACE("spacer", !reach_assumps.empty(),
         tout << "reach assumptions\n" << reach_assumps << "\n";);
 
     if (is_sat == l_true || is_sat == l_undef) {
@@ -3712,9 +3712,6 @@ lbool context::expand_pob(pob& n, pob_ref_buffer &out)
         throw unknown_exception();
     }
     case l_false: {
-
-        XXX("Unreachable\n")
-
         // n is unreachable, create new summary facts
         timeit _timer (is_trace_enabled("spacer_timeit"),
                        "spacer::expand_pob::false",

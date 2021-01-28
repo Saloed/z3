@@ -26,7 +26,6 @@ Notes:
 #include "ast/ast_smt2_pp.h"
 #include "ast/func_decl_dependencies.h"
 #include "util/dec_ref_util.h"
-#include "smt_context.h"
 
 namespace {
 
@@ -479,14 +478,6 @@ namespace {
                     }
                 }
             }
-        }
-
-        expr *find_precondition(expr *e) override {
-            return m_context.find_precondition(e);
-        }
-
-        void setup() override {
-            m_context.setup_ctx();
         }
     };
 }

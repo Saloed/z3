@@ -3156,7 +3156,6 @@ proof * ast_manager::mk_unit_resolution(unsigned num_proofs, proof * const * pro
 
 proof * ast_manager::mk_unit_resolution(unsigned num_proofs, proof * const * proofs, expr * new_fact) {
     TRACE("unit_bug",
-          tout << "start\n";
           for (unsigned i = 0; i < num_proofs; i++) tout << mk_pp(get_fact(proofs[i]), *this) << "\n";
           tout << "===>\n";
           tout << mk_pp(new_fact, *this) << "\n";);
@@ -3165,9 +3164,6 @@ proof * ast_manager::mk_unit_resolution(unsigned num_proofs, proof * const * pro
     args.append(num_proofs, (expr**) proofs);
     args.push_back(new_fact);
 #ifdef Z3DEBUG
-//    for(unsigned i = 0; i < num_proofs; i++){
-//        std::cout << "Proof " << i << " :\n" << mk_pp(proofs[0], *this) << std::endl;
-//    }
     expr * f1 = get_fact(proofs[0]);
     expr const * f2 = get_fact(proofs[1]);
     if (num_proofs == 2 && is_complement(f1, f2)) {
@@ -3178,7 +3174,6 @@ proof * ast_manager::mk_unit_resolution(unsigned num_proofs, proof * const * pro
         app * cls            = to_app(f1);
         unsigned cls_sz      = cls->get_num_args();
         CTRACE("unit_bug", !(num_proofs == cls_sz || (num_proofs == cls_sz + 1 && is_false(new_fact))),
-    tout << "assert 0\n";
           for (unsigned i = 0; i < num_proofs; i++) tout << mk_pp(get_fact(proofs[i]), *this) << "\n";
           tout << "===>\n";
           tout << mk_pp(new_fact, *this) << "\n";);
@@ -3197,12 +3192,7 @@ proof * ast_manager::mk_unit_resolution(unsigned num_proofs, proof * const * pro
                 }
             }
             if (j == num_proofs) {
-                CTRACE("unit_bug", new_fact != lit, tout << "assert 1\n";
-                tout << mk_pp(f1, *this) << "\n" << mk_ll_pp(new_fact, *this) << "\n" << mk_ll_pp(lit, *this) << "\n";
-                );
-                if (new_fact != lit) {
-                    int a = 0;
-                }
+                CTRACE("unit_bug", new_fact != lit, tout << mk_pp(f1, *this) << "\n" << mk_ll_pp(new_fact, *this) << "\n" << mk_ll_pp(lit, *this) << "\n";);
                 SASSERT(new_fact == lit);
                 ++num_occ;
             }

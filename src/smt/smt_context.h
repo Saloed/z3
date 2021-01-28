@@ -287,15 +287,6 @@ namespace smt {
             return m_app2enode.get(n->get_id(), 0);
         }
 
-
-        void display_watch_list_smt2(std::ostream &out, literal &l) ;
-
-        void display_watches_smt2(std::ostream &out) ;
-
-        std::ostream &display_justification(std::ostream &out, justification *j) ;
-
-        std::ostream &display_justification(std::ostream &out, const b_justification &js) ;
-
         void reset_bool_vars() {
             m_expr2bool_var.reset();
         }
@@ -966,7 +957,6 @@ namespace smt {
         template<typename Justification>
         justification * mk_justification(Justification const & j) {
             justification * js = new (m_region) Justification(j);
-//            TRACE("xxx", tout << "Mk justification: \n"; display_justification(tout, js););
             SASSERT(js->in_region());
             if (js->has_del_eh())
                 m_justifications.push_back(js);

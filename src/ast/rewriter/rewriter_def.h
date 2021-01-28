@@ -786,7 +786,6 @@ void rewriter_tpl<Config>::resume_core(expr_ref & result, proof_ref & result_pr)
             break;
         }
     }
-    m().inc_ref(m_root);
     result = result_stack().back();
     result_stack().pop_back();
     SASSERT(result_stack().empty());

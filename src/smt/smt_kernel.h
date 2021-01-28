@@ -123,8 +123,6 @@ namespace smt {
         */
         lbool setup_and_check();
 
-        void setup_ctx();
-        
         /**
            \brief Satisfiability check.
         */
@@ -312,9 +310,6 @@ namespace smt {
            \warning We should not use this method
         */
         context & get_context();
-
-        expr* find_precondition(expr* e);
-
     };
 };
 
