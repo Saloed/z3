@@ -225,16 +225,16 @@ namespace smt {
                     if (e == nullptr) continue;
                     to_analyze.push_back(e);
                 }
-                for (unsigned js_idx = 0; js_idx < ctx.m_justifications.size(); ++js_idx) {
-                    justification *js = ctx.m_justifications[js_idx];
-                    if (visited_js.find(js) != visited_js.end()) {
-                        continue;
-                    }
-                    visited_js.emplace(js);
-                    proof *js_proof = get_proof_if_available(js);
-                    if (js_proof == nullptr) continue;
-                    to_analyze.push_back(js_proof);
-                }
+//                for (unsigned js_idx = 0; js_idx < ctx.m_justifications.size(); ++js_idx) {
+//                    justification *js = ctx.m_justifications[js_idx];
+//                    if (visited_js.find(js) != visited_js.end()) {
+//                        continue;
+//                    }
+//                    visited_js.emplace(js);
+//                    proof *js_proof = get_proof_if_available(js);
+//                    if (js_proof == nullptr) continue;
+//                    to_analyze.push_back(js_proof);
+//                }
 
 
                 for (expr *e: to_analyze) {

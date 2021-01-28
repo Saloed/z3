@@ -124,6 +124,8 @@ expr_ref function_call::function_call_context::mk_call_axiom_for_expr(expr *e, c
         return expr_ref(m);
     }
 
+    std::cout << "Generate axiom:\nSource: " << mk_pp(e, m) << "\nAxiom: " << mk_pp(current_axiom, m) << "\n";
+
     call_axioms.insert(e, current_axiom);
     map.insert(call, call_axioms);
 
