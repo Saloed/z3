@@ -2976,7 +2976,6 @@ model_ref context::get_model()
     inductive_property ex(m, const_cast<model_converter_ref&>(m_mc), rs);
     ex.to_model (model);
     TRACE("xxx", tout << "Model refs:\n" << mk_pp_vec(refs.size(), reinterpret_cast<ast **>(refs.c_ptr()), m) << "\n";);
-    TRACE("xxx", tout << "Model:\n" << model;);
     return model;
 }
 

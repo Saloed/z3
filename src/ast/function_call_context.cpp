@@ -1,16 +1,24 @@
+#include <utility>
 #include <vector>
 #include <string>
 #include "function_call_context.h"
 #include "ast_pp.h"
 
-function_call_context *function_call_context_provider::m_ctx = nullptr;
+function_call::function_call_context *function_call::function_call_context_provider::m_ctx = nullptr;
 
-void function_call_context_provider::initialize() {
+void function_call::function_call_context_provider::initialize() {
     m_ctx = new function_call_context();
 }
 
+function_call::function_call_context *function_call::function_call_context_provider::get_context() {
+    if (!m_ctx) { initialize(); }
+    return m_ctx;
+}
 
-expr *function_call_precondition_miner::find_precondition(expr *expression, expr *function_call, ast_manager &m) {
+
+expr *
+function_call::function_call_precondition_miner::find_precondition(expr *expression, expr *function_call,
+                                                                   ast_manager &m) {
     if (m.is_not(expression)) {
         expr *negated_expr = to_app(expression)->get_arg(0);
         expr *negated_precondition = find_precondition(negated_expr, function_call, m);
@@ -46,7 +54,8 @@ expr *function_call_precondition_miner::find_precondition(expr *expression, expr
     return nullptr;
 }
 
-expr *function_call_precondition_miner::replace_expr(expr *original, expr *from, expr *to, ast_manager &m) {
+expr *
+function_call::function_call_precondition_miner::replace_expr(expr *original, expr *from, expr *to, ast_manager &m) {
     if (original == from) return to;
     switch (original->get_kind()) {
         case AST_VAR:
@@ -83,3 +92,57 @@ expr *function_call_precondition_miner::replace_expr(expr *original, expr *from,
     UNREACHABLE();
     return nullptr;
 }
+
+obj_map<expr, expr *> function_call::function_call_context::get_axioms(expr *call) {
+    return map.contains(call) ? map[call] : obj_map<expr, expr *>();
+}
+
+void function_call::function_call_context::register_call(expr *call) {
+    if (!map.contains(call)) {
+        map.insert(call, obj_map<expr, expr *>());
+    }
+}
+
+expr_ref_vector function_call::function_call_context::generated_axioms(expr *call, ast_manager &m) {
+    auto &&current = get_axioms(call);
+    expr_ref_vector result(m);
+    for (auto &&axiom: current) {
+        result.push_back(m.mk_eq(axiom.m_key, axiom.m_value));
+    }
+    return result;
+}
+
+expr_ref function_call::function_call_context::mk_call_axiom_for_expr(expr *e, call_info &call_info, ast_manager &m) {
+    expr *call = call_info.call_expr.get();
+    auto &&call_axioms = get_axioms(call);
+    expr *current_axiom = nullptr;
+    if (call_axioms.find(e, current_axiom)) {
+        return expr_ref(current_axiom, m);
+    }
+    current_axiom = precondition_miner.find_precondition(e, call, m);
+    if (current_axiom == nullptr) {
+        return expr_ref(m);
+    }
+
+    call_axioms.insert(e, current_axiom);
+    map.insert(call, call_axioms);
+
+    return expr_ref(current_axiom, m);
+}
+
+function_call::call_info function_call::function_call_context::expand_call(expr *call, ast_manager &m) {
+    register_call(call);
+
+    expr_ref call_expr_ref(call, m);
+
+    expr_ref_vector in_args(m);
+    in_args.push_back(to_app(call)->get_arg(1));
+
+    expr_ref_vector out_args(m);
+    out_args.push_back(to_app(call)->get_arg(2));
+
+    return call_info(call_expr_ref, in_args, out_args);
+}
+
+function_call::call_info::call_info(expr_ref call_expr, expr_ref_vector in_args, expr_ref_vector out_args)
+        : call_expr(std::move(call_expr)), in_args(std::move(in_args)), out_args(std::move(out_args)) {}

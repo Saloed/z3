@@ -37,7 +37,7 @@ namespace spacer {
         }
         if (function_call == nullptr) return;
 
-        auto &&registered = function_call_context_provider::get_context()->generated_axioms(function_call, forms.m());
+        auto &&registered = function_call::function_call_context_provider::get_context()->generated_axioms(function_call, forms.m());
         for (auto &&e:registered) {
             forms.push_back(e);
         }
