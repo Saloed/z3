@@ -131,45 +131,38 @@ unsigned function_call::function_call_context::get_function_id(expr *call) {
 
 function_call::function_call_precondition_miner::function_call_precondition_miner(ast_manager &m) : m(m) {}
 
-obj_map<expr, expr *> function_call::function_call_context::get_axioms(expr *call) {
-    return map.contains(call) ? map[call] : obj_map<expr, expr *>();
-}
-
 void function_call::function_call_context::register_call(expr *call) {
-    if (!map.contains(call)) {
-        map.insert(call, obj_map<expr, expr *>());
-    }
+    axiom_storage.get_call_axioms(call);
 }
 
 expr_ref_vector function_call::function_call_context::generated_axioms(expr *call) {
-    auto &&current = get_axioms(call);
+    auto &&current = axiom_storage.get_call_axioms(call);
     expr_ref_vector result(m);
-    for (auto &&axiom: current) {
-        result.push_back(m.mk_eq(axiom.m_key, axiom.m_value));
+    for (auto &&it = current->begin(); it != current->end(); ++it) {
+        result.push_back(m.mk_eq(it->m_key, it->m_value));
     }
     return result;
 }
 
 expr_ref function_call::function_call_context::mk_call_axiom_for_expr(expr *e, call_info &call_info) {
     expr *call = call_info.call_expr.get();
-    auto &&call_axioms = get_axioms(call);
-    expr *current_axiom = nullptr;
-    if (call_axioms.find(e, current_axiom)) {
-        return expr_ref(current_axiom, m);
+    auto &&call_axioms = axiom_storage.get_call_axioms(call);
+
+    if (call_axioms->contains(e)) {
+        expr *axiom;
+        proof *p;
+        call_axioms->get(e, axiom, p);
+        return expr_ref(axiom, m);
     }
 
-    current_axiom = precondition_miner.find_precondition(e, call, get_function_id(call));
+    expr *current_axiom = precondition_miner.find_precondition(e, call, get_function_id(call));
     if (current_axiom == nullptr) {
         return expr_ref(m);
     }
 
-    m.inc_ref(current_axiom); // fixme: memory leak
-
     XXX("Generate axiom:\nSource: " << mk_pp(e, m) << "\nAxiom: " << mk_pp(current_axiom, m) << "\n")
 
-    call_axioms.insert(e, current_axiom);
-    map.insert(call, call_axioms);
-
+    call_axioms->insert(e, current_axiom, nullptr);
     return expr_ref(current_axiom, m);
 }
 
@@ -177,8 +170,7 @@ void expand_call_args(unsigned call_id, expr *call, expr_ref_vector &in_args, ex
     if (call_id == 777) {
         in_args.push_back(to_app(call)->get_arg(1));
         out_args.push_back(to_app(call)->get_arg(2));
-    }
-    if (call_id == 123) {
+    } else if (call_id == 123) {
         in_args.push_back(to_app(call)->get_arg(1));
         in_args.push_back(to_app(call)->get_arg(2));
         out_args.push_back(to_app(call)->get_arg(3));
@@ -199,7 +191,8 @@ function_call::call_info function_call::function_call_context::expand_call(expr 
     return call_info(call_expr_ref, in_args, out_args);
 }
 
-function_call::function_call_context::function_call_context(ast_manager &m) : m(m), precondition_miner(m) {
+function_call::function_call_context::function_call_context(ast_manager &m)
+        : m(m), precondition_miner(m), axiom_storage(m) {
     function_call_family_id = m.mk_family_id("function_call");
 }
 
@@ -236,3 +229,26 @@ void function_call::function_call_context::extend_forms_with_generated_axioms(ex
 
 function_call::call_info::call_info(expr_ref call_expr, expr_ref_vector in_args, expr_ref_vector out_args)
         : call_expr(std::move(call_expr)), in_args(std::move(in_args)), out_args(std::move(out_args)) {}
+
+function_call::call_axiom_storage::call_axiom_storage(ast_manager &m) : m(m) {
+}
+
+expr_map *function_call::call_axiom_storage::get_call_axioms(expr *call) {
+    unsigned call_id = call->get_id();
+    unsigned call_axiom_idx;
+    if (calls.find(call_id, call_axiom_idx)) {
+        return axioms[call_axiom_idx];
+    }
+    call_axiom_idx = axioms.size();
+    expr_map *axiom_map = alloc(expr_map, m, false);
+    axioms.push_back(axiom_map);
+    calls.insert(call_id, call_axiom_idx);
+    return axioms[call_axiom_idx];
+}
+
+function_call::call_axiom_storage::~call_axiom_storage() {
+    for (unsigned i = 0; i < axioms.size(); ++i) {
+        expr_map *axiom_map = axioms[i];
+        dealloc(axiom_map);
+    }
+}

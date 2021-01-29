@@ -1503,6 +1503,11 @@ ast_manager::~ast_manager() {
             dealloc(p);
     }
     m_plugins.reset();
+
+    if (m_function_call_context != nullptr) {
+        dealloc(m_function_call_context);
+    }
+
     while (!m_ast_table.empty()) {
         DEBUG_CODE(IF_VERBOSE(0, verbose_stream() << "ast_manager LEAKED: " << m_ast_table.size() << std::endl););
         ptr_vector<ast> roots;

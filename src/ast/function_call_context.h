@@ -1,8 +1,25 @@
 #pragma once
 
 #include "ast.h"
+#include "expr_map.h"
+#include "util/vector.h"
+#include "util/map.h"
 
 namespace function_call {
+
+    class call_axiom_storage {
+    public:
+        explicit call_axiom_storage(ast_manager& m);
+
+        expr_map* get_call_axioms(expr *call);
+
+        virtual ~call_axiom_storage();
+
+    private:
+        u_map<unsigned> calls;
+        vector<expr_map*> axioms;
+        ast_manager &m;
+    };
 
     class call_info {
     public:
@@ -46,9 +63,7 @@ namespace function_call {
     private:
         void extend_forms_with_generated_axioms(expr *form, expr_ref_vector &forms);
 
-        obj_map<expr, expr *> get_axioms(expr *call);
-
-        obj_map<expr, obj_map<expr, expr *>> map;
+        call_axiom_storage axiom_storage;
         function_call_precondition_miner precondition_miner;
         ast_manager &m;
 
