@@ -39,6 +39,38 @@ function_call::function_call_precondition_miner::find_precondition(expr *e, expr
             expr *xxx_var = m.mk_const(var, _arith.mk_int());
             return replace_expr(e, xxx_var, x);
         }
+    } else if (call_id == 123) {
+        if (expr_str == "(function_call 123 query!0_0_n query!0_1_n query!0_3_n)") {
+            return m.mk_true();
+        } else if (expr_str == "(function_call 123 recursion_0_n recursion_1_n aux!1_n)") {
+            return m.mk_true();
+        }
+        std::vector<std::string> known_vars = {"query!0_3_n", "aux!1_n"};
+
+        expr *in_idx = to_app(call)->get_arg(1);
+        expr *in_arr = to_app(call)->get_arg(2);
+        expr *out_arr = to_app(call)->get_arg(3);
+
+        array_util _arr(m);
+        arith_util _arith(m);
+
+        expr_ref_vector in_val_args(m);
+        in_val_args.push_back(in_arr);
+        in_val_args.push_back(in_idx);
+        expr *in_val = _arr.mk_select(in_val_args);
+        expr *update_val = _arith.mk_add(in_val, _arith.mk_int(5));
+        expr_ref_vector out_val_args(m);
+        out_val_args.push_back(in_arr);
+        out_val_args.push_back(in_idx);
+        out_val_args.push_back(update_val);
+        expr *x = _arr.mk_store(out_val_args); // (store in i (select in i) + 5)
+
+
+        for (auto &&var: known_vars) {
+            if (expr_str.find(var) == std::string::npos) continue;
+            return replace_expr(e, out_arr, x);
+        }
+
     }
 
     std::cout << "Unexpected lemma: " << expr_str << " Call: " << mk_pp(call, m) << std::endl;
@@ -125,10 +157,13 @@ expr_ref function_call::function_call_context::mk_call_axiom_for_expr(expr *e, c
     if (call_axioms.find(e, current_axiom)) {
         return expr_ref(current_axiom, m);
     }
+
     current_axiom = precondition_miner.find_precondition(e, call, get_function_id(call));
     if (current_axiom == nullptr) {
         return expr_ref(m);
     }
+
+    m.inc_ref(current_axiom); // fixme: memory leak
 
     XXX("Generate axiom:\nSource: " << mk_pp(e, m) << "\nAxiom: " << mk_pp(current_axiom, m) << "\n")
 
@@ -142,6 +177,11 @@ void expand_call_args(unsigned call_id, expr *call, expr_ref_vector &in_args, ex
     if (call_id == 777) {
         in_args.push_back(to_app(call)->get_arg(1));
         out_args.push_back(to_app(call)->get_arg(2));
+    }
+    if (call_id == 123) {
+        in_args.push_back(to_app(call)->get_arg(1));
+        in_args.push_back(to_app(call)->get_arg(2));
+        out_args.push_back(to_app(call)->get_arg(3));
     } else {
         std::cout << "Expand: unexpected call id " << call_id << std::endl;
     }
