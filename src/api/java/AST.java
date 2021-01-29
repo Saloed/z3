@@ -15,9 +15,9 @@ Notes:
     
 **/
 
-package com.microsoft.z3;
+package saloed.z3;
 
-import com.microsoft.z3.enumerations.Z3_ast_kind;
+import saloed.z3.enumerations.Z3_ast_kind;
 
 /**
  * The abstract syntax tree (AST) class.

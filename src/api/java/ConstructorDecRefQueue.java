@@ -1,4 +1,4 @@
-package com.microsoft.z3;
+package saloed.z3;
 
 public class ConstructorDecRefQueue extends IDecRefQueue<Constructor> {
     public ConstructorDecRefQueue() {

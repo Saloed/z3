@@ -15,7 +15,7 @@ Notes:
     
 **/ 
 
-package com.microsoft.z3;
+package saloed.z3;
 
 /**
  * A function interpretation is represented as a finite map and an 'else' value.

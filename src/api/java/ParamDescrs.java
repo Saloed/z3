@@ -15,9 +15,9 @@ Notes:
     
 **/ 
 
-package com.microsoft.z3;
+package saloed.z3;
 
-import com.microsoft.z3.enumerations.Z3_param_kind;
+import saloed.z3.enumerations.Z3_param_kind;
 
 /**
  * A ParamDescrs describes a set of parameters.

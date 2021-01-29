@@ -52,7 +52,24 @@ namespace realclosure {
 };
 
 namespace api {
-       
+
+    struct function_call_info {
+        unsigned id;
+        unsigned num_in_args;
+        unsigned num_out_args;
+    };
+
+    class function_call_analyzer {
+    public:
+        explicit function_call_analyzer(FunctionCallAnalyzer& analyzer);
+        expr *find_precondition(expr *expression, unsigned function_id, expr** in_args, unsigned num_in_args, expr** out_args, unsigned num_out_args);
+        void update_function_call_info(unsigned num_functions, const unsigned function_ids[],
+                                       const unsigned function_number_in_args[], const unsigned function_number_out_args[]);
+    private:
+        FunctionCallAnalyzer& m_analyzer;
+        u_map<function_call_info> call_info;
+    };
+
     class seq_expr_solver : public expr_solver {
         ast_manager& m;
         params_ref const& p;
@@ -121,6 +138,8 @@ namespace api {
 
         event_handler *            m_interruptable; // Reference to an object that can be interrupted by Z3_interrupt
 
+        function_call_analyzer*      m_function_call_analyzer;
+
      public:
         // Scoped obj for setting m_interruptable
         class set_interruptable {
@@ -166,6 +185,9 @@ namespace api {
         family_id get_seq_fid() const { return m_seq_fid; }
         datatype_decl_plugin * get_dt_plugin() const { return m_dt_plugin; }
         family_id get_special_relations_fid() const { return m_special_relations_fid; }
+
+        bool update_call_analyzer(FunctionCallAnalyzer& analyzer);
+        function_call_analyzer* get_call_analyzer() { return m_function_call_analyzer; }
 
         Z3_error_code get_error_code() const { return m_error_code; }
         void reset_error_code() { m_error_code = Z3_OK; }

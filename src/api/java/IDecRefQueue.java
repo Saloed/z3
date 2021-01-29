@@ -15,7 +15,7 @@ Notes:
     
 **/
 
-package com.microsoft.z3;
+package saloed.z3;
 
 import java.lang.ref.PhantomReference;
 import java.lang.ref.Reference;

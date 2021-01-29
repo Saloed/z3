@@ -15,9 +15,9 @@ Notes:
     
 **/ 
 
-package com.microsoft.z3;
+package saloed.z3;
 
-import com.microsoft.z3.Native.LongPtr;
+import saloed.z3.Native.LongPtr;
 
 /**
  * List sorts.

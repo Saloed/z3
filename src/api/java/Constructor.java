@@ -15,7 +15,7 @@ Notes:
     
 **/
 
-package com.microsoft.z3;
+package saloed.z3;
 
 /**
  * Constructors are used for datatype sorts.

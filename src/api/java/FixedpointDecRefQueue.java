@@ -15,7 +15,7 @@ Notes:
     
 **/ 
 
-package com.microsoft.z3;
+package saloed.z3;
 
 class FixedpointDecRefQueue extends IDecRefQueue<Fixedpoint> {
     public FixedpointDecRefQueue() 

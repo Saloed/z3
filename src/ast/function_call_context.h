@@ -1,5 +1,6 @@
 #pragma once
 
+#include <api/api_context.h>
 #include "ast.h"
 #include "expr_map.h"
 #include "util/vector.h"
@@ -59,6 +60,8 @@ namespace function_call {
         void extend_forms_with_generated_axioms(expr_ref_vector &forms);
 
         unsigned get_function_id(expr *call);
+
+        void update_function_call_analyzer(api::function_call_analyzer *analyzer);
 
     private:
         void extend_forms_with_generated_axioms(expr *form, expr_ref_vector &forms);

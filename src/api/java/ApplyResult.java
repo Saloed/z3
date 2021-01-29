@@ -15,7 +15,7 @@ Notes:
     
 **/
 
-package com.microsoft.z3;
+package saloed.z3;
 
 /**
  * ApplyResult objects represent the result of an application of a tactic to a

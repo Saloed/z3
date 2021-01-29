@@ -1,3 +1,7 @@
+find_package(Java REQUIRED)
+find_package(JNI REQUIRED)
+include(UseJava)
+
 set(generated_files
   api_commands.cpp
   api_log_macros.cpp
@@ -33,6 +37,8 @@ add_custom_command(OUTPUT ${generated_files}
   VERBATIM
 )
 
+include_directories(${JNI_INCLUDE_DIRS})
+
 z3_add_component(api
   SOURCES
     api_algebraic.cpp
@@ -64,6 +70,7 @@ z3_add_component(api
     api_special_relations.cpp
     api_stats.cpp
     api_tactic.cpp
+    api_function_calls.cpp
     z3_replayer.cpp
     ${full_path_generated_files}
   COMPONENT_DEPENDENCIES

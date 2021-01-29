@@ -15,11 +15,11 @@ Notes:
 
 **/
 
-package com.microsoft.z3;
+package saloed.z3;
 
-import static com.microsoft.z3.Constructor.of;
+import static saloed.z3.Constructor.of;
 
-import com.microsoft.z3.enumerations.Z3_ast_print_mode;
+import saloed.z3.enumerations.Z3_ast_print_mode;
 
 import java.util.Map;
 

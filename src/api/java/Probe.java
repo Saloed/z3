@@ -15,7 +15,7 @@ Notes:
     
 **/ 
 
-package com.microsoft.z3;
+package saloed.z3;
 
 /**
  * Probes are used to inspect a goal (aka problem) and collect information that

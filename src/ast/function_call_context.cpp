@@ -227,6 +227,10 @@ void function_call::function_call_context::extend_forms_with_generated_axioms(ex
     }
 }
 
+void function_call::function_call_context::update_function_call_analyzer(api::function_call_analyzer *analyzer) {
+    analyzer->find_precondition(nullptr, 0, nullptr, 0, nullptr, 0); // todo
+}
+
 function_call::call_info::call_info(expr_ref call_expr, expr_ref_vector in_args, expr_ref_vector out_args)
         : call_expr(std::move(call_expr)), in_args(std::move(in_args)), out_args(std::move(out_args)) {}
 

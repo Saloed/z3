@@ -10,7 +10,7 @@ foreach (file_name "enumerations" "Native.cpp" "Native.java")
   endif()
 endforeach()
 
-set(Z3_JAVA_PACKAGE_NAME "com.microsoft.z3")
+set(Z3_JAVA_PACKAGE_NAME "saloed.z3")
 
 # Rule to generate ``Native.java`` and ``Native.cpp``
 set(Z3_JAVA_NATIVE_JAVA "${CMAKE_CURRENT_BINARY_DIR}/Native.java")
@@ -35,15 +35,15 @@ add_custom_command(OUTPUT "${Z3_JAVA_NATIVE_JAVA}" "${Z3_JAVA_NATIVE_CPP}"
 
 # Add rule to build native code that provides a bridge between
 # ``Native.java`` and libz3's interfac3.
-add_library(z3java SHARED ${Z3_JAVA_NATIVE_CPP})
-target_link_libraries(z3java PRIVATE libz3)
+add_library(z3javaWithFunctionCalls SHARED ${Z3_JAVA_NATIVE_CPP})
+target_link_libraries(z3javaWithFunctionCalls PRIVATE libz3)
 # FIXME:
 # Not sure if using all the flags used by the Z3 components is really necessary
 # here. The Python build system uses all the flags used for building
 # Z3's components to build ``Native.cpp`` lets do the same for now.
-target_compile_options(z3java PRIVATE ${Z3_COMPONENT_CXX_FLAGS})
-target_compile_definitions(z3java PRIVATE ${Z3_COMPONENT_CXX_DEFINES})
-target_include_directories(z3java PRIVATE
+target_compile_options(z3javaWithFunctionCalls PRIVATE ${Z3_COMPONENT_CXX_FLAGS})
+target_compile_definitions(z3javaWithFunctionCalls PRIVATE ${Z3_COMPONENT_CXX_DEFINES})
+target_include_directories(z3javaWithFunctionCalls PRIVATE
   "${PROJECT_SOURCE_DIR}/src/api"
   "${PROJECT_BINARY_DIR}/src/api"
   ${JNI_INCLUDE_DIRS}
@@ -51,9 +51,9 @@ target_include_directories(z3java PRIVATE
 # FIXME: Should this library have SONAME and VERSION set?
 
 # This prevents CMake from automatically defining ``z3java_EXPORTS``
-set_property(TARGET z3java PROPERTY DEFINE_SYMBOL "")
+set_property(TARGET z3javaWithFunctionCalls PROPERTY DEFINE_SYMBOL "")
 
-# Rule to generate the ``com.microsoft.z3.enumerations`` package
+# Rule to generate the ``saloed.z3.enumerations`` package
 # FIXME: This list of files is fragile
 set(Z3_JAVA_ENUMERATION_PACKAGE_FILES
   Z3_ast_kind.java
@@ -194,11 +194,11 @@ list(APPEND Z3_JAVA_JAR_SOURCE_FILES_FULL_PATH
 add_custom_target(build_z3_java_bindings
   ALL
   DEPENDS
-    z3java
+        z3javaWithFunctionCalls
     z3JavaJar
 )
 
-# Rule to build ``com.microsoft.z3.jar``
+# Rule to build ``saloed.z3.jar``
 # TODO: Should we set ``CMAKE_JNI_TARGET`` to ``TRUE``?
 add_jar(z3JavaJar
   SOURCES ${Z3_JAVA_JAR_SOURCE_FILES_FULL_PATH}
@@ -228,7 +228,7 @@ if (Z3_INSTALL_JAVA_BINDINGS)
     PATH
     "Directory to install Z3 Java JNI bridge library relative to install prefix"
   )
-  install(TARGETS z3java DESTINATION "${Z3_JAVA_JNI_LIB_INSTALLDIR}")
+  install(TARGETS z3javaWithFunctionCalls DESTINATION "${Z3_JAVA_JNI_LIB_INSTALLDIR}")
   # Note: Don't use ``DESTINATION`` here as the version of ``UseJava.cmake`` shipped
   # with CMake 2.8.12.2 handles that incorrectly.
   install_jar(z3JavaJar "${Z3_JAVA_JAR_INSTALLDIR}")

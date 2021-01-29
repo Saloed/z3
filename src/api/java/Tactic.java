@@ -15,7 +15,7 @@ Notes:
     
 **/ 
 
-package com.microsoft.z3;
+package saloed.z3;
 
 /**
  * Tactics are the basic building block for creating custom solvers for specific

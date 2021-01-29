@@ -26,6 +26,7 @@ Revision History:
 #include "api/api_util.h"
 #include "ast/reg_decl_plugins.h"
 #include "math/realclosure/realclosure.h"
+#include "ast/function_call_context.h"
 
 
 // The install_tactics procedure is automatically generated
@@ -38,7 +39,7 @@ namespace api {
     void object::inc_ref() { m_ref_count++; }
 
     void object::dec_ref() { SASSERT(m_ref_count > 0); m_ref_count--; if (m_ref_count == 0) m_context.del_object(this); }
-    
+
     unsigned context::add_object(api::object* o) {
         unsigned id = m_allocated_objects.size();
         if (!m_free_object_ids.empty()) {
@@ -88,7 +89,7 @@ namespace api {
         m_error_code = Z3_OK;
         m_print_mode = Z3_PRINT_SMTLIB_FULL;
         m_searching  = false;
-        
+
 
         m_interruptable = nullptr;
         m_error_handler = &default_error_handler;
@@ -104,7 +105,7 @@ namespace api {
         m_seq_fid   = m().mk_family_id("seq");
         m_special_relations_fid   = m().mk_family_id("specrels");
         m_dt_plugin = static_cast<datatype_decl_plugin*>(m().get_plugin(m_dt_fid));
-    
+
         install_tactics(*this);
     }
 
@@ -118,18 +119,21 @@ namespace api {
         }
         if (m_params.owns_manager())
             m_manager.detach();
+        if (m_function_call_analyzer != nullptr) {
+            dealloc(m_function_call_analyzer);
+        }
     }
 
     context::set_interruptable::set_interruptable(context & ctx, event_handler & i):
         m_ctx(ctx) {
         lock_guard lock(ctx.m_mux);
         SASSERT(m_ctx.m_interruptable == 0);
-        m_ctx.m_interruptable = &i;        
+        m_ctx.m_interruptable = &i;
     }
 
     context::set_interruptable::~set_interruptable() {
         lock_guard lock(m_ctx.m_mux);
-        m_ctx.m_interruptable = nullptr;        
+        m_ctx.m_interruptable = nullptr;
     }
 
     void context::interrupt() {
@@ -137,15 +141,15 @@ namespace api {
         if (m_interruptable)
             (*m_interruptable)(API_INTERRUPT_EH_CALLER);
         m_limit.cancel();
-        m().limit().cancel();        
+        m().limit().cancel();
     }
-    
+
     void context::set_error_code(Z3_error_code err, char const* opt_msg) {
-        m_error_code = err; 
+        m_error_code = err;
         if (err != Z3_OK) {
             m_exception_msg.clear();
             if (opt_msg) m_exception_msg = opt_msg;
-            invoke_error_handler(err); 
+            invoke_error_handler(err);
         }
     }
 
@@ -158,9 +162,9 @@ namespace api {
     }
 
     void context::check_searching() {
-        if (m_searching) { 
+        if (m_searching) {
             set_error_code(Z3_INVALID_USAGE, "cannot use function while searching"); // TBD: error code could be fixed.
-        } 
+        }
     }
 
     char * context::mk_external_string(char const * str) {
@@ -173,7 +177,7 @@ namespace api {
         m_string_buffer.append(str, n);
         return const_cast<char *>(m_string_buffer.c_str());
     }
-    
+
     char * context::mk_external_string(std::string && str) {
         m_string_buffer = std::move(str);
         return const_cast<char *>(m_string_buffer.c_str());
@@ -190,7 +194,7 @@ namespace api {
         }
         else if (fid == get_datalog_fid() && n.is_uint64()) {
             uint64_t sz;
-            if (m_datalog_util.try_get_size(s, sz) && 
+            if (m_datalog_util.try_get_size(s, sz) &&
                 sz <= n.get_uint64()) {
                 invoke_error_handler(Z3_INVALID_ARG);
             }
@@ -200,14 +204,14 @@ namespace api {
             invoke_error_handler(Z3_INVALID_ARG);
         }
         save_ast_trail(e);
-        return e;    
+        return e;
     }
-        
+
     expr * context::mk_and(unsigned num_exprs, expr * const * exprs) {
         switch(num_exprs) {
-        case 0: 
-            return m().mk_true(); 
-        case 1: 
+        case 0:
+            return m().mk_true();
+        case 1:
             save_ast_trail(exprs[0]);
             return exprs[0];
         default: {
@@ -253,13 +257,13 @@ namespace api {
     void context::handle_exception(z3_exception & ex) {
         if (ex.has_error_code()) {
             switch(ex.error_code()) {
-            case ERR_MEMOUT: 
+            case ERR_MEMOUT:
                 set_error_code(Z3_MEMOUT_FAIL, nullptr);
             break;
-            case ERR_PARSER: 
+            case ERR_PARSER:
                 set_error_code(Z3_PARSER_ERROR, ex.msg());
                 break;
-            case ERR_INI_FILE: 
+            case ERR_INI_FILE:
                 set_error_code(Z3_INVALID_ARG, nullptr);
                 break;
             case ERR_OPEN_FILE:
@@ -271,10 +275,10 @@ namespace api {
             }
         }
         else {
-            set_error_code(Z3_EXCEPTION, ex.msg()); 
+            set_error_code(Z3_EXCEPTION, ex.msg());
         }
     }
-    
+
     void context::invoke_error_handler(Z3_error_code c) {
         if (m_error_handler) {
             if (g_z3_log) {
@@ -323,6 +327,39 @@ namespace api {
         return *(m_rcf_manager.get());
     }
 
+    bool context::update_call_analyzer(FunctionCallAnalyzer& analyzer) {
+        if (m_function_call_analyzer != nullptr) return false;
+        m_function_call_analyzer = alloc(function_call_analyzer, analyzer);
+        m_manager->get_function_call_context()->update_function_call_analyzer(m_function_call_analyzer);
+        return true;
+    }
+
+    function_call_analyzer::function_call_analyzer(FunctionCallAnalyzer &analyzer): m_analyzer(analyzer) {
+    }
+
+    expr *function_call_analyzer::find_precondition(expr *expression, unsigned int function_id, expr **in_args,
+                                                    unsigned int num_in_args, expr **out_args,
+                                                    unsigned int num_out_args) {
+        Z3_ast result = m_analyzer.analyze(
+                of_expr(expression), function_id,
+                of_exprs(in_args), num_in_args,
+                of_exprs(out_args), num_out_args
+        );
+        return to_expr(result);
+    }
+
+    void function_call_analyzer::update_function_call_info(unsigned int num_functions, const unsigned int function_ids[],
+                                                           const unsigned int function_number_in_args[],
+                                                           const unsigned int function_number_out_args[]) {
+        for (unsigned i = 0; i < num_functions; i++) {
+            unsigned f_id = function_ids[i];
+            unsigned f_in_args = function_number_in_args[i];
+            unsigned f_out_args = function_number_out_args[i];
+            api::function_call_info info{f_id, f_in_args, f_out_args};
+            call_info.insert(f_id, info);
+        }
+
+    }
 };
 
 
@@ -333,7 +370,7 @@ namespace api {
 // ------------------------
 
 extern "C" {
-    
+
     Z3_context Z3_API Z3_mk_context(Z3_config c) {
         Z3_TRY;
         LOG_Z3_mk_context(c);
@@ -395,9 +432,9 @@ extern "C" {
     }
 
 
-    void Z3_API Z3_get_version(unsigned * major, 
-                               unsigned * minor, 
-                               unsigned * build_number, 
+    void Z3_API Z3_get_version(unsigned * major,
+                               unsigned * minor,
+                               unsigned * build_number,
                                unsigned * revision_number) {
         LOG_Z3_get_version(major, minor, build_number, revision_number);
         *major           = Z3_MAJOR_VERSION;
@@ -441,7 +478,7 @@ extern "C" {
     }
 
     void Z3_API Z3_set_error_handler(Z3_context c, Z3_error_handler h) {
-        RESET_ERROR_CODE();    
+        RESET_ERROR_CODE();
         mk_c(c)->set_error_handler(h);
     }
 
@@ -484,5 +521,5 @@ extern "C" {
         mk_c(c)->set_print_mode(mode);
         Z3_CATCH;
     }
-    
+
 };

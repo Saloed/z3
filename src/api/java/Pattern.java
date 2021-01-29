@@ -15,7 +15,7 @@ Notes:
     
 **/ 
 
-package com.microsoft.z3;
+package saloed.z3;
 
 /**
  * Patterns comprise a list of terms. The list should be non-empty. If the list
