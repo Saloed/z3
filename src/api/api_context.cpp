@@ -334,6 +334,14 @@ namespace api {
         return true;
     }
 
+    void context::update_function_call_info(unsigned int num_functions, const unsigned int function_ids[],
+                                            const unsigned int function_number_in_args[],
+                                            const unsigned int function_number_out_args[]) {
+        m_manager->get_function_call_context()->update_call_info(
+                num_functions, function_ids, function_number_in_args, function_number_out_args
+        );
+    }
+
     function_call_analyzer::function_call_analyzer(context *context, function_call_analyzer_backend *analyzer)
             : m_analyzer(analyzer), m_api_context(context) {
     }
@@ -347,19 +355,6 @@ namespace api {
                                             of_exprs(out_args), num_out_args
         );
         return to_expr(result);
-    }
-
-    void function_call_analyzer::update_function_call_info(unsigned int num_functions, const unsigned int function_ids[],
-                                                           const unsigned int function_number_in_args[],
-                                                           const unsigned int function_number_out_args[]) {
-        for (unsigned i = 0; i < num_functions; i++) {
-            unsigned f_id = function_ids[i];
-            unsigned f_in_args = function_number_in_args[i];
-            unsigned f_out_args = function_number_out_args[i];
-            api::function_call_info info{f_id, f_in_args, f_out_args};
-            call_info.insert(f_id, info);
-        }
-
     }
 
     function_call_analyzer::~function_call_analyzer() {

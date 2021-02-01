@@ -561,7 +561,7 @@ def mk_java(java_dir, package_name, java_special_native_dir=None):
     java_native.write('  static {\n')
     java_native.write('    if (null == System.getProperty("z3.skipLibraryLoad")) {\n')
     java_native.write('      try {\n')
-    java_native.write('        System.loadLibrary("z3javaWithFunctionCalls");\n')
+    java_native.write('        System.loadLibrary("z3java");\n')
     java_native.write('      } catch (UnsatisfiedLinkError ex) {\n')
     java_native.write('        System.loadLibrary("libz3java");\n')
     java_native.write('      }\n')

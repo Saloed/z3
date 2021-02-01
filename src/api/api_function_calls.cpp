@@ -19,12 +19,7 @@ void Z3_API Z3_provide_function_call_info(Z3_context c, unsigned num_functions, 
                                           unsigned function_number_in_args[], unsigned function_number_out_args[]) {
     auto &&ctx = mk_c(c);
     ctx->reset_error_code();
-    auto &&call_analyzer = ctx->get_call_analyzer();
-    if (call_analyzer == nullptr) {
-        ctx->set_error_code(Z3_EXCEPTION, "Function analyzer is not initialized");
-        return;
-    }
-    call_analyzer->update_function_call_info(num_functions, function_ids, function_number_in_args,
+    ctx->update_function_call_info(num_functions, function_ids, function_number_in_args,
                                              function_number_out_args);
 }
 }
