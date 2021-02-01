@@ -200,11 +200,11 @@ namespace smt {
     struct axiom_expr_info {
         ptr_vector<expr> exprs;
         unsigned arg_idx;
-        function_call::call_info call;
+        function_call::expanded_call call;
     };
 
     void theory_function_call::analyze_all_exprs_via_axiom() {
-        vector<function_call::call_info> registered_calls;
+        vector<function_call::expanded_call> registered_calls;
         for (auto &&call: known_calls) {
             auto &&expanded_call = m.get_function_call_context()->expand_call(call);
             registered_calls.push_back(expanded_call);

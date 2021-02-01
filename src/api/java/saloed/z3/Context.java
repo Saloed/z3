@@ -4119,6 +4119,19 @@ public class Context implements AutoCloseable {
         Native.registerFunctionCallAnalyzer(nCtx(), analyzer);
     }
 
+    public void provideFunctionCallInfo(final FunctionCallInfo[] callInfo) {
+        int[] ids = new int[callInfo.length];
+        int[] numInArgs = new int[callInfo.length];
+        int[] numOutArgs = new int[callInfo.length];
+        for (int i = 0; i < callInfo.length; i++) {
+            FunctionCallInfo info = callInfo[i];
+            ids[i] = info.getId();
+            numInArgs[i] = info.getNumInArgs();
+            numOutArgs[i] = info.getNumOutArgs();
+        }
+        Native.provideFunctionCallInfo(nCtx(), ids.length, ids, numInArgs, numOutArgs);
+    }
+
     /**
      * Disposes of the context.
      **/
