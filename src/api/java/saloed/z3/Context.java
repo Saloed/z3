@@ -4115,6 +4115,10 @@ public class Context implements AutoCloseable {
         return m_Optimize_DRQ;
     }
 
+    public void registerFunctionCallAnalyzer(final FunctionCallAnalyzer analyzer) {
+        Native.registerFunctionCallAnalyzer(nCtx(), analyzer);
+    }
+
     /**
      * Disposes of the context.
      **/

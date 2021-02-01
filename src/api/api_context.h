@@ -61,12 +61,16 @@ namespace api {
 
     class function_call_analyzer {
     public:
-        explicit function_call_analyzer(FunctionCallAnalyzer& analyzer);
+        explicit function_call_analyzer(context *context, function_call_analyzer_backend *analyzer);
         expr *find_precondition(expr *expression, unsigned function_id, expr** in_args, unsigned num_in_args, expr** out_args, unsigned num_out_args);
         void update_function_call_info(unsigned num_functions, const unsigned function_ids[],
                                        const unsigned function_number_in_args[], const unsigned function_number_out_args[]);
+
+        virtual ~function_call_analyzer();
+
     private:
-        FunctionCallAnalyzer& m_analyzer;
+        context* m_api_context;
+        function_call_analyzer_backend* m_analyzer;
         u_map<function_call_info> call_info;
     };
 
@@ -186,7 +190,7 @@ namespace api {
         datatype_decl_plugin * get_dt_plugin() const { return m_dt_plugin; }
         family_id get_special_relations_fid() const { return m_special_relations_fid; }
 
-        bool update_call_analyzer(FunctionCallAnalyzer& analyzer);
+        bool update_call_analyzer(function_call_analyzer_backend* analyzer);
         function_call_analyzer* get_call_analyzer() { return m_function_call_analyzer; }
 
         Z3_error_code get_error_code() const { return m_error_code; }

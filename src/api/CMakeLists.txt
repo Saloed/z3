@@ -1,7 +1,3 @@
-find_package(Java REQUIRED)
-find_package(JNI REQUIRED)
-include(UseJava)
-
 set(generated_files
   api_commands.cpp
   api_log_macros.cpp
@@ -36,8 +32,6 @@ add_custom_command(OUTPUT ${generated_files}
   ${ADD_CUSTOM_COMMAND_USES_TERMINAL_ARG}
   VERBATIM
 )
-
-include_directories(${JNI_INCLUDE_DIRS})
 
 z3_add_component(api
   SOURCES

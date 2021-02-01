@@ -327,23 +327,24 @@ namespace api {
         return *(m_rcf_manager.get());
     }
 
-    bool context::update_call_analyzer(FunctionCallAnalyzer& analyzer) {
+    bool context::update_call_analyzer(function_call_analyzer_backend* analyzer) {
         if (m_function_call_analyzer != nullptr) return false;
-        m_function_call_analyzer = alloc(function_call_analyzer, analyzer);
+        m_function_call_analyzer = alloc(function_call_analyzer, this, analyzer);
         m_manager->get_function_call_context()->update_function_call_analyzer(m_function_call_analyzer);
         return true;
     }
 
-    function_call_analyzer::function_call_analyzer(FunctionCallAnalyzer &analyzer): m_analyzer(analyzer) {
+    function_call_analyzer::function_call_analyzer(context *context, function_call_analyzer_backend *analyzer)
+            : m_analyzer(analyzer), m_api_context(context) {
     }
 
     expr *function_call_analyzer::find_precondition(expr *expression, unsigned int function_id, expr **in_args,
                                                     unsigned int num_in_args, expr **out_args,
                                                     unsigned int num_out_args) {
-        Z3_ast result = m_analyzer.analyze(
-                of_expr(expression), function_id,
-                of_exprs(in_args), num_in_args,
-                of_exprs(out_args), num_out_args
+        Z3_ast result = m_analyzer->analyze(reinterpret_cast<Z3_context>(m_api_context),
+                                            of_expr(expression), function_id,
+                                            of_exprs(in_args), num_in_args,
+                                            of_exprs(out_args), num_out_args
         );
         return to_expr(result);
     }
@@ -359,6 +360,11 @@ namespace api {
             call_info.insert(f_id, info);
         }
 
+    }
+
+    function_call_analyzer::~function_call_analyzer() {
+        delete m_analyzer;  // allocated via new operator in api
+        m_analyzer = nullptr;
     }
 };
 
