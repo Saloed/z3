@@ -543,7 +543,7 @@ def mk_java_special_native(source_dir, _java, name, result, params, pkg_str):
         _java.write(f.read() % pkg_str)
 
 
-def mk_java(java_dir, package_name, java_special_native_dir=None):
+def mk_java(java_dir, package_name, java_special_native_dir, java_native_library_name):
     java_nativef  = os.path.join(java_dir, 'Native.java')
     java_wrapperf = os.path.join(java_dir, 'Native.cpp')
     java_native   = open(java_nativef, 'w')
@@ -561,9 +561,9 @@ def mk_java(java_dir, package_name, java_special_native_dir=None):
     java_native.write('  static {\n')
     java_native.write('    if (null == System.getProperty("z3.skipLibraryLoad")) {\n')
     java_native.write('      try {\n')
-    java_native.write('        System.loadLibrary("z3java");\n')
+    java_native.write('        System.loadLibrary("{}");\n'.format(java_native_library_name))
     java_native.write('      } catch (UnsatisfiedLinkError ex) {\n')
-    java_native.write('        System.loadLibrary("libz3java");\n')
+    java_native.write('        System.loadLibrary("lib{}");\n'.format(java_native_library_name))
     java_native.write('      }\n')
     java_native.write('    }\n')
     java_native.write('  }\n')
@@ -1927,6 +1927,7 @@ def generate_files(api_files,
                    java_output_dir=None,
                    java_package_name=None,
                    java_special_native_dir=None,
+                   java_native_library_name=None,
                    js_output_dir=None,
                    ml_output_dir=None,
                    ml_src_dir=None):
@@ -2002,7 +2003,7 @@ def generate_files(api_files,
         print("Generated '{}'".format(dotnet_file.name))
 
   if java_output_dir:
-    mk_java(java_output_dir, java_package_name, java_special_native_dir)
+    mk_java(java_output_dir, java_package_name, java_special_native_dir, java_native_library_name)
 
   if ml_output_dir:
     assert not ml_src_dir is None
@@ -2052,6 +2053,10 @@ def main(args):
                       dest='java_special_native_dir',
                       default=None,
                       help="Directory to search for special native impls.")
+  parser.add_argument("--java-native-library-name",
+                      dest='java_native_library_name',
+                      default='z3java',
+                      help="Java native library name.")
   pargs = parser.parse_args(args)
 
   if pargs.java_output_dir:
@@ -2076,6 +2081,7 @@ def main(args):
                  java_output_dir=pargs.java_output_dir,
                  java_package_name=pargs.java_package_name,
                  java_special_native_dir=pargs.java_special_native_dir,
+                 java_native_library_name=pargs.java_native_library_name,
                  js_output_dir=pargs.js_output_dir,
                  ml_output_dir=pargs.ml_output_dir,
                  ml_src_dir=pargs.ml_src_dir)
