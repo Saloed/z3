@@ -266,7 +266,7 @@ endif()
 ################################################################################
 # Java bindings
 ################################################################################
-option(Z3_BUILD_JAVA_BINDINGS "Build Java bindings for Z3" OFF)
+option(Z3_BUILD_JAVA_BINDINGS "Build Java bindings for Z3" ON)
 if (Z3_BUILD_JAVA_BINDINGS)
 #  if (NOT Z3_BUILD_LIBZ3_SHARED)
 #    message(FATAL_ERROR "The Java bindings will not work with a static libz3. "
