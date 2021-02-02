@@ -84,7 +84,8 @@ namespace api {
         m_recfun(m()),
         m_last_result(m()),
         m_ast_trail(m()),
-        m_pmanager(m_limit) {
+        m_pmanager(m_limit),
+        m_function_call_analyzer(nullptr){
 
         m_error_code = Z3_OK;
         m_print_mode = Z3_PRINT_SMTLIB_FULL;
@@ -107,6 +108,8 @@ namespace api {
         m_dt_plugin = static_cast<datatype_decl_plugin*>(m().get_plugin(m_dt_fid));
 
         install_tactics(*this);
+
+        enable_trace("xxx");
     }
 
 
@@ -328,7 +331,11 @@ namespace api {
     }
 
     bool context::update_call_analyzer(function_call_analyzer_backend* analyzer) {
-        if (m_function_call_analyzer != nullptr) return false;
+        XXX("update analyzer with: " << analyzer << "\n")
+        if (m_function_call_analyzer != nullptr) {
+            XXX("Function call analyzer is not nullptr\n")
+            return false;
+        }
         m_function_call_analyzer = alloc(function_call_analyzer, this, analyzer);
         m_manager->get_function_call_context()->update_function_call_analyzer(m_function_call_analyzer);
         return true;
@@ -337,9 +344,14 @@ namespace api {
     void context::update_function_call_info(unsigned int num_functions, const unsigned int function_ids[],
                                             const unsigned int function_number_in_args[],
                                             const unsigned int function_number_out_args[]) {
+        XXX("update function call info" << "\n")
         m_manager->get_function_call_context()->update_call_info(
                 num_functions, function_ids, function_number_in_args, function_number_out_args
         );
+    }
+
+    app *context::mk_function_call(unsigned int function_id, unsigned int num_args, expr **args) {
+        return m().get_function_call_context()->mk_function_call(function_id, num_args, args);
     }
 
     function_call_analyzer::function_call_analyzer(context *context, function_call_analyzer_backend *analyzer)
@@ -349,6 +361,7 @@ namespace api {
     expr *function_call_analyzer::find_precondition(expr *expression, unsigned int function_id, expr **in_args,
                                                     unsigned int num_in_args, expr **out_args,
                                                     unsigned int num_out_args) {
+        XXX("Run analyzer for function " << function_id << "\n")
         Z3_ast result = m_analyzer->analyze(reinterpret_cast<Z3_context>(m_api_context),
                                             of_expr(expression), function_id,
                                             of_exprs(in_args), num_in_args,

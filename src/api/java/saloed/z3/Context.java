@@ -21,6 +21,9 @@ import static saloed.z3.Constructor.of;
 
 import saloed.z3.enumerations.Z3_ast_print_mode;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -35,11 +38,20 @@ import java.util.Map;
 public class Context implements AutoCloseable {
     private long m_ctx;
     static final Object creation_lock = new Object();
+    private static final Map<Long, Context> contextCache = new HashMap<>();
+
+    protected static Context create(long m_ctx) {
+        if (contextCache.containsKey(m_ctx)) {
+            return contextCache.get(m_ctx);
+        }
+        return new Context(m_ctx);
+    }
 
     public Context () {
         synchronized (creation_lock) {
             m_ctx = Native.mkContextRc(0);
             init();
+            contextCache.put(m_ctx, this);
         }
     }
 
@@ -47,6 +59,7 @@ public class Context implements AutoCloseable {
         synchronized (creation_lock) {
             this.m_ctx = m_ctx;
             init();
+            contextCache.put(this.m_ctx, this);
         }
     }
 
@@ -4115,8 +4128,17 @@ public class Context implements AutoCloseable {
         return m_Optimize_DRQ;
     }
 
+    private final List<FunctionCallAnalyzer> registeredFunctionCallAnalyzers = new ArrayList<>();
+
     public void registerFunctionCallAnalyzer(final FunctionCallAnalyzer analyzer) {
-        Native.registerFunctionCallAnalyzer(nCtx(), analyzer);
+        final int analyzerId = registeredFunctionCallAnalyzers.size();
+        registeredFunctionCallAnalyzers.add(analyzer);
+        Native.registerFunctionCallAnalyzer(nCtx(), analyzerId);
+    }
+
+    public Expr runFunctionCallAnalyzer(int analyzerId, int functionId, Expr expression, Expr[] inArgs, Expr[] outArgs){
+        final FunctionCallAnalyzer analyzer = registeredFunctionCallAnalyzers.get(analyzerId);
+        return analyzer.analyze(functionId, expression, inArgs, outArgs);
     }
 
     public void provideFunctionCallInfo(final FunctionCallInfo[] callInfo) {
@@ -4131,6 +4153,13 @@ public class Context implements AutoCloseable {
         }
         Native.provideFunctionCallInfo(nCtx(), ids.length, ids, numInArgs, numOutArgs);
     }
+
+    public Expr mkFunctionCall(int functionId, Expr[] args) {
+        checkContextMatch(args);
+        long obj = Native.mkFunctionCall(nCtx(), functionId, Z3Object.arrayLength(args), Z3Object.arrayToNative(args));
+        return Expr.create(this, obj);
+    }
+
 
     /**
      * Disposes of the context.
@@ -4161,6 +4190,7 @@ public class Context implements AutoCloseable {
 
         synchronized (creation_lock) {
             Native.delContext(m_ctx);
+            contextCache.remove(m_ctx);
         }
         m_ctx = 0;
     }

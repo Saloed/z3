@@ -21,14 +21,27 @@ extern "C" {
 
 def_API('Z3_register_function_call_analyzer', BOOL, (_in(CONTEXT), _in(VOID_PTR)), has_special_native_impl=True)
 */
-bool Z3_API Z3_register_function_call_analyzer(Z3_context c, void * analyzer_backend);
+bool Z3_API Z3_register_function_call_analyzer(Z3_context c, void *analyzer_backend);
 
 /**
 \brief Provide function call info
 
 def_API('Z3_provide_function_call_info', VOID, (_in(CONTEXT), _in(UINT), _in_array(1, UINT), _in_array(1, UINT), _in_array(1, UINT)))
 */
-void Z3_API Z3_provide_function_call_info(Z3_context c, unsigned num_functions, unsigned function_ids[], unsigned function_number_in_args[], unsigned function_number_out_args[]);
+void Z3_API Z3_provide_function_call_info(Z3_context c, unsigned num_functions, unsigned function_ids[],
+                                          unsigned function_number_in_args[], unsigned function_number_out_args[]);
+
+
+/**
+    \brief Create function call.
+
+    def_API('Z3_mk_function_call', AST, (_in(CONTEXT), _in(UINT), _in(UINT), _in_array(2, AST)))
+ */
+Z3_ast Z3_API Z3_mk_function_call(
+        Z3_context c,
+        unsigned fid,
+        unsigned num_args,
+        Z3_ast const args[]);
 
 
 #ifdef __cplusplus

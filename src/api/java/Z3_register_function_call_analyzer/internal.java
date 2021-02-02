@@ -1,24 +1,20 @@
-  protected static native boolean INTERNALregisterFunctionCallAnalyzer(long ctx, Object analyzer);
+  protected static native boolean INTERNALregisterFunctionCallAnalyzer(long ctx, int analyzer);
 
 
-  protected static long INTERNALrunFunctionCallAnalyzer(
-        long rawCtx, Object rawAnalyzer, int functionId, long rawExpression, long[] rawInArgs, long[] rawOutArgs
+  public static long INTERNALrunFunctionCallAnalyzer(
+        long rawCtx, int analyzerId, int functionId, long rawExpression, long[] rawInArgs, long[] rawOutArgs
   ) {
-    Context ctx = new Context(rawCtx);
-    Expr expression = new Expr(ctx, rawExpression);
+    Context ctx = Context.create(rawCtx);
+    Expr expression = Expr.create(ctx, rawExpression);
 
     Expr[] inArgs = new Expr[rawInArgs.length];
     Expr[] outArgs = new Expr[rawOutArgs.length];
     for (int i = 0; i < rawInArgs.length; i++) {
-        inArgs[i] = new Expr(ctx, rawInArgs[i]);
+        inArgs[i] = Expr.create(ctx, rawInArgs[i]);
     }
     for (int i = 0; i < rawOutArgs.length; i++) {
-        outArgs[i] = new Expr(ctx, rawOutArgs[i]);
+        outArgs[i] = Expr.create(ctx, rawOutArgs[i]);
     }
-
-    FunctionCallAnalyzer analyzer = (FunctionCallAnalyzer) rawAnalyzer;
-    Expr result = analyzer.analyze(functionId, expression, inArgs, outArgs);
-
-    return result.getNativeObject();
+    Expr result = ctx.runFunctionCallAnalyzer(analyzerId, functionId, expression, inArgs, outArgs);
+    return Z3Object.getNativeObject(result);
   }
-

@@ -270,7 +270,8 @@ namespace api {
         //
         // ------------------------
         smt_params & fparams() { return m_fparams; }
-        
+
+        app *mk_function_call(unsigned int function_id, unsigned int num_args, expr **args);
     };
     
 };

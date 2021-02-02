@@ -62,6 +62,8 @@ namespace function_call {
                               const unsigned int function_number_in_args[],
                               const unsigned int function_number_out_args[]);
 
+        app *mk_function_call(unsigned int function_id, unsigned int num_args, expr **args);
+
     private:
         void extend_forms_with_generated_axioms(expr *form, expr_ref_vector &forms);
 
@@ -70,6 +72,9 @@ namespace function_call {
         call_axiom_storage axiom_storage;
         api::function_call_analyzer *m_function_call_analyzer;
         u_map<function_call::call_info> call_info;
+
+        u_map<unsigned> f_decl_to_f_id;
+        u_map<unsigned> f_call_to_f_id;
 
         ast_manager &m;
         family_id function_call_family_id;

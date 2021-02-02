@@ -15,8 +15,23 @@ unsigned parse_id(expr *id_expr, ast_manager &m) {
 }
 
 unsigned function_call::function_call_context::get_function_id(expr *call) {
+    unsigned call_id = call->get_id();
+    if (f_call_to_f_id.contains(call_id)) {
+        return f_call_to_f_id[call_id];
+    }
+    unsigned call_decl_id = to_app(call)->get_decl()->get_id();
+    if (f_decl_to_f_id.contains(call_decl_id)) {
+        unsigned f_id = f_decl_to_f_id[call_decl_id];
+        f_call_to_f_id.insert(call_id, f_id);
+        return f_id;
+    }
+
+    XXX("Unregistered call: " << call_id << "\n")
     expr *id_expr = to_app(call)->get_arg(0);
-    return parse_id(id_expr, m);
+    unsigned f_id = parse_id(id_expr, m);
+    f_call_to_f_id.insert(call_id, f_id);
+    f_decl_to_f_id.insert(call_decl_id, f_id);
+    return f_id;
 }
 
 void function_call::function_call_context::register_call(expr *call) {
@@ -117,7 +132,6 @@ void function_call::function_call_context::extend_forms_with_generated_axioms(ex
 
 void function_call::function_call_context::update_function_call_analyzer(api::function_call_analyzer *analyzer) {
     m_function_call_analyzer = analyzer;
-    std::cout << "huy" << std::endl;
     XXX("Successfully register function call analyzer: " << analyzer << "\n")
 }
 
@@ -148,6 +162,35 @@ function_call::function_call_context::update_call_info(
         function_call::call_info info{f_id, f_in_args, f_out_args};
         call_info.insert(f_id, info);
     }
+}
+
+app *
+function_call::function_call_context::mk_function_call(unsigned int function_id, unsigned int num_args, expr **args) {
+    decl_plugin *plugin = m.get_plugin(function_call_family_id);
+    arith_util _arith(m);
+    expr *function_id_expr = _arith.mk_int(function_id);
+
+    ptr_vector<expr> function_call_args;
+    function_call_args.push_back(function_id_expr);
+    for (unsigned i = 0; i < num_args; i++) {
+        function_call_args.push_back(args[i]);
+    }
+    ptr_vector<sort> function_call_args_sorts;
+    vector<parameter> params;
+    for (auto &&arg: function_call_args) {
+        function_call_args_sorts.push_back(m.get_sort(arg));
+        params.push_back(parameter(arg));
+    }
+
+    func_decl *call_decl = plugin->mk_func_decl(OP_FUNCTION_CALL, params.size(), params.c_ptr(),
+                                                function_call_args_sorts.size(), function_call_args_sorts.c_ptr(),
+                                                m.mk_bool_sort());
+    app *function_call = m.mk_app(call_decl, function_call_args.size(), function_call_args.c_ptr());
+
+    f_decl_to_f_id.insert(call_decl->get_id(), function_id);
+    f_call_to_f_id.insert(function_call->get_id(), function_id);
+
+    return function_call;
 }
 
 function_call::expanded_call::expanded_call(unsigned id, expr_ref call_expr, expr_ref_vector in_args,
