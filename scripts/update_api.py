@@ -560,11 +560,7 @@ def mk_java(java_dir, package_name, java_special_native_dir, java_native_library
 
     java_native.write('  static {\n')
     java_native.write('    if (null == System.getProperty("z3.skipLibraryLoad")) {\n')
-    java_native.write('      try {\n')
-    java_native.write('        System.loadLibrary("{}");\n'.format(java_native_library_name))
-    java_native.write('      } catch (UnsatisfiedLinkError ex) {\n')
-    java_native.write('        System.loadLibrary("lib{}");\n'.format(java_native_library_name))
-    java_native.write('      }\n')
+    java_native.write('      NativeLibraryUtil.loadLibrary("{}");\n'.format(java_native_library_name))
     java_native.write('    }\n')
     java_native.write('  }\n')
 

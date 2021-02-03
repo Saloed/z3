@@ -55,6 +55,7 @@ target_include_directories(${Z3_JAVA_LIBRARY_NAME} PRIVATE
   "${PROJECT_BINARY_DIR}/src/api"
   ${JNI_INCLUDE_DIRS}
 )
+
 # FIXME: Should this library have SONAME and VERSION set?
 
 # This prevents CMake from automatically defining ``z3java_EXPORTS``
@@ -225,10 +226,25 @@ add_custom_target(copy_generated_java_sources_enums
 
 add_dependencies(build_z3_java_bindings copy_generated_java_sources_native copy_generated_java_sources_enums)
 
+set(Z3_JAVA_LIBRARY_FULL_NAME "${Z3_JAVA_LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX}")
+set(Z3_JAVA_LIBRARY_FULL_NAME_ABSOLUTE "${PROJECT_SOURCE_DIR}/lib/${Z3_JAVA_LIBRARY_FULL_NAME}")
+file(RELATIVE_PATH Z3_JAVA_LIBRARY_FULL_NAME_RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" ${Z3_JAVA_LIBRARY_FULL_NAME_ABSOLUTE})
+add_custom_command(OUTPUT ${Z3_JAVA_LIBRARY_FULL_NAME_ABSOLUTE}
+      COMMAND
+        ${CMAKE_COMMAND} -E copy
+        $<TARGET_FILE:${Z3_JAVA_LIBRARY_NAME}>
+        "${Z3_JAVA_LIBRARY_FULL_NAME_ABSOLUTE}"
+      DEPENDS
+        ${Z3_JAVA_LIBRARY_NAME}
+      COMMENT "Copy ${Z3_JAVA_LIBRARY_FULL_NAME}"
+      ${ADD_CUSTOM_COMMAND_USES_TERMINAL_ARG}
+)
+
 # Rule to build ``saloed.z3.jar``
 # TODO: Should we set ``CMAKE_JNI_TARGET`` to ``TRUE``?
 add_jar(z3JavaJar
   SOURCES ${Z3_JAVA_JAR_SOURCE_FILES_FULL_PATH}
+          ${Z3_JAVA_LIBRARY_FULL_NAME_RELATIVE}
   OUTPUT_NAME ${Z3_JAVA_PACKAGE_NAME}
   OUTPUT_DIR "${PROJECT_BINARY_DIR}"
   VERSION "${Z3_VERSION}"
