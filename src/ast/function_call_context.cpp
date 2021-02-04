@@ -67,22 +67,25 @@ expr_ref function_call::function_call_context::mk_call_axiom_for_expr(expr *e, e
     return expr_ref(current_axiom, m);
 }
 
-void expand_call_args(unsigned call_id, expr *call, expr_ref_vector &in_args, expr_ref_vector &out_args) {
-    if (call_id == 777) {
-        in_args.push_back(to_app(call)->get_arg(1));
-        out_args.push_back(to_app(call)->get_arg(2));
-    } else if (call_id == 123) {
-        in_args.push_back(to_app(call)->get_arg(1));
-        in_args.push_back(to_app(call)->get_arg(2));
-        out_args.push_back(to_app(call)->get_arg(3));
-    } else {
-        std::cout << "Expand: unexpected call id " << call_id << std::endl;
+void function_call::function_call_context::expand_call_args(
+        unsigned call_id, expr *call,
+        expr_ref_vector &in_args, expr_ref_vector &out_args
+) {
+    if (!call_info.contains(call_id)) {
+        std::cerr << "No info for call id: " << call_id << std::endl;
+        return;
+    }
+    auto &&info = call_info[call_id];
+    unsigned arg_id = 1; // 0 is call id
+    for (int i = 0; i < info.num_in_args; i++, arg_id++) {
+        in_args.push_back(to_app(call)->get_arg(arg_id));
+    }
+    for (int i = 0; i < info.num_out_args; i++, arg_id++) {
+        out_args.push_back(to_app(call)->get_arg(arg_id));
     }
 }
 
 function_call::expanded_call function_call::function_call_context::expand_call(expr *call) {
-    register_call(call);
-
     expr_ref call_expr_ref(call, m);
     expr_ref_vector in_args(m);
     expr_ref_vector out_args(m);
@@ -96,7 +99,6 @@ function_call::expanded_call function_call::function_call_context::expand_call(e
 function_call::function_call_context::function_call_context(ast_manager &m)
         : m(m), m_function_call_analyzer(nullptr), axiom_storage(m) {
     function_call_family_id = m.mk_family_id("function_call");
-    std::cout << "Create function call context" << std::endl;
 }
 
 expr *function_call::function_call_context::find_function_call(expr *root) {
@@ -132,7 +134,6 @@ void function_call::function_call_context::extend_forms_with_generated_axioms(ex
 
 void function_call::function_call_context::update_function_call_analyzer(api::function_call_analyzer *analyzer) {
     m_function_call_analyzer = analyzer;
-    XXX("Successfully register function call analyzer: " << analyzer << "\n")
 }
 
 expr *function_call::function_call_context::analyze_function_call(expanded_call &call, expr *expression) {

@@ -6,7 +6,6 @@
 
 function_call_decl_plugin::function_call_decl_plugin() :
         m_call_sym("function_call") {
-    std::cout << "Create function call decl plugin" << std::endl;
 }
 
 sort *function_call_decl_plugin::mk_sort(decl_kind k, unsigned num_parameters, parameter const *parameters) {

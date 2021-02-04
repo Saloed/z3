@@ -17,7 +17,6 @@ namespace smt {
     theory_function_call::theory_function_call(context &ctx) :
             theory(ctx, ctx.get_manager().mk_family_id("function_call")),
             m_num_pending_queries(0) {
-        std::cout << "Create function call theory" << std::endl;
     }
 
     void theory_function_call::display(std::ostream &out) const {
@@ -86,17 +85,14 @@ namespace smt {
 
 
     void theory_function_call::new_eq_eh(theory_var v1, theory_var v2) {
-        std::cout << "New eq" << std::endl;
     }
 
 
     void theory_function_call::new_diseq_eh(theory_var v1, theory_var v2) {
-        std::cout << "New diseq" << std::endl;
     }
 
     void theory_function_call::relevant_eh(app *n) {
         if (!is_function_call(n)) return;
-        std::cout << "relevant_eh" << "\n" << mk_pp(n, m) << std::endl;
         m_num_pending_queries++;
         if (!ctx.e_internalized(n)) ctx.internalize(n, false);
     }
@@ -177,14 +173,6 @@ namespace smt {
 
 
     void theory_function_call::propagate() {
-        ptr_vector<clause> lemmas = ctx.get_lemmas();
-
-//        std::cout << "Propagate " << m_propagate_idx << std::endl;
-
-//        auto &&bv2Expr_printer = [&](std::ostream &out, expr *e, unsigned i) {
-//            return print_expr(out, e, i, ctx);
-//        };
-
         m_propagate_idx++;
         analyze_all_exprs_via_axiom();
         m_num_pending_queries = 0;
@@ -253,7 +241,6 @@ namespace smt {
 
                 ctx.internalize(precondition, is_quantifier(precondition));
                 ctx.mark_as_relevant(precondition);
-//                m.inc_ref(precondition);
 
                 literal lit = mk_eq(e, precondition, is_quantifier(precondition));
                 mk_th_axiom(lit);

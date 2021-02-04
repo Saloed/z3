@@ -69,6 +69,8 @@ namespace function_call {
 
         expr *analyze_function_call(expanded_call &call, expr *expression);
 
+        void expand_call_args(unsigned int call_id, expr *call, expr_ref_vector &in_args, expr_ref_vector &out_args);
+
         call_axiom_storage axiom_storage;
         api::function_call_analyzer *m_function_call_analyzer;
         u_map<function_call::call_info> call_info;
