@@ -40,7 +40,7 @@ namespace api {
     void object::inc_ref() { m_ref_count++; }
 
     void object::dec_ref() { SASSERT(m_ref_count > 0); m_ref_count--; if (m_ref_count == 0) m_context.del_object(this); }
-
+    
     unsigned context::add_object(api::object* o) {
         unsigned id = m_allocated_objects.size();
         if (!m_free_object_ids.empty()) {
@@ -91,7 +91,7 @@ namespace api {
         m_error_code = Z3_OK;
         m_print_mode = Z3_PRINT_SMTLIB_FULL;
         m_searching  = false;
-
+        
 
         m_interruptable = nullptr;
         m_error_handler = &default_error_handler;
@@ -107,7 +107,7 @@ namespace api {
         m_seq_fid   = m().mk_family_id("seq");
         m_special_relations_fid   = m().mk_family_id("specrels");
         m_dt_plugin = static_cast<datatype_decl_plugin*>(m().get_plugin(m_dt_fid));
-
+    
         install_tactics(*this);
     }
 
@@ -130,12 +130,12 @@ namespace api {
         m_ctx(ctx) {
         lock_guard lock(ctx.m_mux);
         SASSERT(m_ctx.m_interruptable == 0);
-        m_ctx.m_interruptable = &i;
+        m_ctx.m_interruptable = &i;        
     }
 
     context::set_interruptable::~set_interruptable() {
         lock_guard lock(m_ctx.m_mux);
-        m_ctx.m_interruptable = nullptr;
+        m_ctx.m_interruptable = nullptr;        
     }
 
     void context::interrupt() {
@@ -143,15 +143,15 @@ namespace api {
         if (m_interruptable)
             (*m_interruptable)(API_INTERRUPT_EH_CALLER);
         m_limit.cancel();
-        m().limit().cancel();
+        m().limit().cancel();        
     }
-
+    
     void context::set_error_code(Z3_error_code err, char const* opt_msg) {
-        m_error_code = err;
+        m_error_code = err; 
         if (err != Z3_OK) {
             m_exception_msg.clear();
             if (opt_msg) m_exception_msg = opt_msg;
-            invoke_error_handler(err);
+            invoke_error_handler(err); 
         }
     }
 
@@ -164,9 +164,9 @@ namespace api {
     }
 
     void context::check_searching() {
-        if (m_searching) {
+        if (m_searching) { 
             set_error_code(Z3_INVALID_USAGE, "cannot use function while searching"); // TBD: error code could be fixed.
-        }
+        } 
     }
 
     char * context::mk_external_string(char const * str) {
@@ -179,7 +179,7 @@ namespace api {
         m_string_buffer.append(str, n);
         return const_cast<char *>(m_string_buffer.c_str());
     }
-
+    
     char * context::mk_external_string(std::string && str) {
         m_string_buffer = std::move(str);
         return const_cast<char *>(m_string_buffer.c_str());
@@ -196,7 +196,7 @@ namespace api {
         }
         else if (fid == get_datalog_fid() && n.is_uint64()) {
             uint64_t sz;
-            if (m_datalog_util.try_get_size(s, sz) &&
+            if (m_datalog_util.try_get_size(s, sz) && 
                 sz <= n.get_uint64()) {
                 invoke_error_handler(Z3_INVALID_ARG);
             }
@@ -206,14 +206,14 @@ namespace api {
             invoke_error_handler(Z3_INVALID_ARG);
         }
         save_ast_trail(e);
-        return e;
+        return e;    
     }
-
+        
     expr * context::mk_and(unsigned num_exprs, expr * const * exprs) {
         switch(num_exprs) {
-        case 0:
-            return m().mk_true();
-        case 1:
+        case 0: 
+            return m().mk_true(); 
+        case 1: 
             save_ast_trail(exprs[0]);
             return exprs[0];
         default: {
@@ -259,13 +259,13 @@ namespace api {
     void context::handle_exception(z3_exception & ex) {
         if (ex.has_error_code()) {
             switch(ex.error_code()) {
-            case ERR_MEMOUT:
+            case ERR_MEMOUT: 
                 set_error_code(Z3_MEMOUT_FAIL, nullptr);
             break;
-            case ERR_PARSER:
+            case ERR_PARSER: 
                 set_error_code(Z3_PARSER_ERROR, ex.msg());
                 break;
-            case ERR_INI_FILE:
+            case ERR_INI_FILE: 
                 set_error_code(Z3_INVALID_ARG, nullptr);
                 break;
             case ERR_OPEN_FILE:
@@ -277,10 +277,10 @@ namespace api {
             }
         }
         else {
-            set_error_code(Z3_EXCEPTION, ex.msg());
+            set_error_code(Z3_EXCEPTION, ex.msg()); 
         }
     }
-
+    
     void context::invoke_error_handler(Z3_error_code c) {
         if (m_error_handler) {
             if (g_z3_log) {
@@ -339,7 +339,7 @@ namespace api {
 // ------------------------
 
 extern "C" {
-
+    
     Z3_context Z3_API Z3_mk_context(Z3_config c) {
         Z3_TRY;
         LOG_Z3_mk_context(c);
@@ -401,9 +401,9 @@ extern "C" {
     }
 
 
-    void Z3_API Z3_get_version(unsigned * major,
-                               unsigned * minor,
-                               unsigned * build_number,
+    void Z3_API Z3_get_version(unsigned * major, 
+                               unsigned * minor, 
+                               unsigned * build_number, 
                                unsigned * revision_number) {
         LOG_Z3_get_version(major, minor, build_number, revision_number);
         *major           = Z3_MAJOR_VERSION;
@@ -447,7 +447,7 @@ extern "C" {
     }
 
     void Z3_API Z3_set_error_handler(Z3_context c, Z3_error_handler h) {
-        RESET_ERROR_CODE();
+        RESET_ERROR_CODE();    
         mk_c(c)->set_error_handler(h);
     }
 
@@ -490,5 +490,5 @@ extern "C" {
         mk_c(c)->set_print_mode(mode);
         Z3_CATCH;
     }
-
+    
 };
