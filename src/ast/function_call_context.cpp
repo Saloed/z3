@@ -77,10 +77,10 @@ void function_call::function_call_context::expand_call_args(
     }
     auto &&info = call_info[call_id];
     unsigned arg_id = 1; // 0 is call id
-    for (int i = 0; i < info.num_in_args; i++, arg_id++) {
+    for (unsigned i = 0; i < info.num_in_args; i++, arg_id++) {
         in_args.push_back(to_app(call)->get_arg(arg_id));
     }
-    for (int i = 0; i < info.num_out_args; i++, arg_id++) {
+    for (unsigned i = 0; i < info.num_out_args; i++, arg_id++) {
         out_args.push_back(to_app(call)->get_arg(arg_id));
     }
 }

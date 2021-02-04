@@ -15,7 +15,7 @@ namespace smt {
     class theory_function_call : public theory {
     public:
 
-        ptr_vector<expr> known_calls;
+        expr_ref_vector known_calls;
         unsigned m_num_pending_queries;
         unsigned m_propagate_idx = 0;
         std::unordered_set<unsigned > visited_expr;

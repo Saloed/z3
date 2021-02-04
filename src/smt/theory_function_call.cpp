@@ -16,7 +16,7 @@ namespace smt {
 
     theory_function_call::theory_function_call(context &ctx) :
             theory(ctx, ctx.get_manager().mk_family_id("function_call")),
-            m_num_pending_queries(0) {
+            m_num_pending_queries(0), known_calls(m) {
     }
 
     void theory_function_call::display(std::ostream &out) const {
