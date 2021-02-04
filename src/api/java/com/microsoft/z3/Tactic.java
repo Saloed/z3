@@ -17,8 +17,6 @@ Notes:
 
 package com.microsoft.z3;
 
-import com.microsoft.z3.Native;
-
 /**
  * Tactics are the basic building block for creating custom solvers for specific
  * problem domains. The complete list of tactics may be obtained using

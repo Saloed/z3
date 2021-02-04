@@ -17,8 +17,6 @@ Notes:
 
 package com.microsoft.z3;
 
-import com.microsoft.z3.Native;
-
 class ASTDecRefQueue extends IDecRefQueue<AST>
 {
     public ASTDecRefQueue() 

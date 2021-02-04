@@ -17,8 +17,6 @@ Notes:
 
 package com.microsoft.z3;
 
-import com.microsoft.z3.Native;
-
 /**
  * Objects of this class track statistical information about solvers.
  **/

@@ -17,8 +17,6 @@ Notes:
 
 package com.microsoft.z3;
 
-import com.microsoft.z3.Native;
-
 class ApplyResultDecRefQueue extends IDecRefQueue<ApplyResult>
 {
     public ApplyResultDecRefQueue() 

@@ -17,7 +17,6 @@ Notes:
 
 package com.microsoft.z3;
 
-import com.microsoft.z3.Native;
 import com.microsoft.z3.enumerations.Z3_lbool;
 
 /**

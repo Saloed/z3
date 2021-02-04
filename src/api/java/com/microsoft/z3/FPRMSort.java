@@ -16,8 +16,6 @@ Notes:
 --*/
 package com.microsoft.z3;
 
-import com.microsoft.z3.Native;
-
 /**
  * The FloatingPoint RoundingMode sort
  **/

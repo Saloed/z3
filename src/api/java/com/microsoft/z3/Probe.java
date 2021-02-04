@@ -17,8 +17,6 @@ Notes:
 
 package com.microsoft.z3;
 
-import com.microsoft.z3.Native;
-
 /**
  * Probes are used to inspect a goal (aka problem) and collect information that
  * may be used to decide which solver and/or preprocessing step will be used.

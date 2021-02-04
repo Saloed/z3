@@ -17,8 +17,6 @@ Notes:
 
 package com.microsoft.z3;
 
-import com.microsoft.z3.Native;
-
 /**
  * A function interpretation is represented as a finite map and an 'else' value.
  * Each entry in the finite map represents the value of a function given a set

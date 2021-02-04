@@ -17,8 +17,6 @@ Notes:
 
 package com.microsoft.z3;
 
-import com.microsoft.z3.Native;
-
 class StatisticsDecRefQueue extends IDecRefQueue<Statistics> {
     public StatisticsDecRefQueue() 
     {

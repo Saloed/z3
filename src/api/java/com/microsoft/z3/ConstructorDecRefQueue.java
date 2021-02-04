@@ -1,7 +1,5 @@
 package com.microsoft.z3;
 
-import com.microsoft.z3.Native;
-
 public class ConstructorDecRefQueue extends IDecRefQueue<Constructor> {
     public ConstructorDecRefQueue() {
         super();

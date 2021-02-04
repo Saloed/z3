@@ -17,8 +17,6 @@ Notes:
 
 package com.microsoft.z3;
 
-import com.microsoft.z3.Native;
-
 /**
  * ApplyResult objects represent the result of an application of a tactic to a
  * goal. It contains the subgoals that were produced.

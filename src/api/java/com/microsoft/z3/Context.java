@@ -19,7 +19,6 @@ package com.microsoft.z3;
 
 import static com.microsoft.z3.Constructor.of;
 
-import com.microsoft.z3.Native;
 import com.microsoft.z3.enumerations.Z3_ast_print_mode;
 
 import java.util.ArrayList;

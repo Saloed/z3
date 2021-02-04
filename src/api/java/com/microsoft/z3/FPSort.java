@@ -16,8 +16,6 @@ Notes:
 --*/
 package com.microsoft.z3;
 
-import com.microsoft.z3.Native;
-
 /**
  * A FloatingPoint sort
  **/
@@ -31,7 +29,7 @@ public class FPSort extends Sort
     
     public FPSort(Context ctx, int ebits, int sbits)
     {
-        super(ctx, Native.mkFpaSort(ctx.nCtx(), ebits, sbits));
+        super(ctx, Native.mkFpaSort(ctx.nCtx(), ebits, sbits));        
     }
     
     /**

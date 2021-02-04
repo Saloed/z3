@@ -17,8 +17,6 @@ Notes:
 
 package com.microsoft.z3;
 
-import com.microsoft.z3.Native;
-
 /**
  * Interaction logging for Z3.
      * Remarks:  Note that this is a global, static log

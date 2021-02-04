@@ -17,8 +17,6 @@ Notes:
 
 package com.microsoft.z3;
 
-import com.microsoft.z3.Native;
-
 /**
  * Patterns comprise a list of terms. The list should be non-empty. If the list
  * comprises of more than one term, it is also called a multi-pattern.

@@ -18,8 +18,6 @@ Notes:
 
 package com.microsoft.z3;
 
-import com.microsoft.z3.Native;
-
 /**
  * A ParameterSet represents a configuration in the form of Symbol/value pairs.
  **/
