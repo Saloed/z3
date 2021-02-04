@@ -2,9 +2,7 @@
 #include <vector>
 #include <string>
 #include "function_call_context.h"
-#include "ast_pp.h"
 #include "function_call_decl_plugin.h"
-#include "api/api_context_function_call.h"
 
 
 unsigned parse_id(expr *id_expr, ast_manager &m) {

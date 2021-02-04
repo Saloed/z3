@@ -26,6 +26,7 @@
 #include "api/z3.h"
 #include "api/api_util.h"
 #include "api/api_polynomial.h"
+#include "api/api_context.h"
 
 namespace api {
     class function_call_analyzer {
@@ -34,7 +35,7 @@ namespace api {
 
         expr *
         find_precondition(expr *expression, unsigned function_id, expr **in_args, unsigned num_in_args, expr **out_args,
-                          unsigned num_out_args);
+                          unsigned num_out_args) const;
 
         virtual ~function_call_analyzer();
 

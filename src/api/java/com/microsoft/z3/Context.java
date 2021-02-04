@@ -52,7 +52,6 @@ public class Context implements AutoCloseable {
         synchronized (creation_lock) {
             m_ctx = Native.mkContextRc(0);
             init();
-            contextCache.put(m_ctx, this);
         }
     }
 
@@ -60,7 +59,6 @@ public class Context implements AutoCloseable {
         synchronized (creation_lock) {
             this.m_ctx = m_ctx;
             init();
-            contextCache.put(this.m_ctx, this);
         }
     }
 
@@ -79,6 +77,7 @@ public class Context implements AutoCloseable {
      *     - model                      model generation for solvers, this parameter can be overwritten when creating a solver
      *     - model_validate             validate models produced by solvers
      *     - unsat_core                 unsat-core generation for solvers, this parameter can be overwritten when creating a solver
+     *     - enable_function_call_support Enable support for function calls
      * Note that in previous versions of Z3, this constructor was also used to set global and
      * module parameters. For this purpose we should now use {@code Global.setParameter}
      **/
@@ -97,6 +96,7 @@ public class Context implements AutoCloseable {
     private void init() {
         setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB2_COMPLIANT);
         Native.setInternalErrorHandler(m_ctx);
+        contextCache.put(m_ctx, this);
     }
 
     /**

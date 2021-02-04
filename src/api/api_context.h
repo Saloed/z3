@@ -54,6 +54,7 @@ namespace realclosure {
 
 namespace api {
 
+    class function_call_analyzer;
 
     class seq_expr_solver : public expr_solver {
         ast_manager& m;
@@ -76,8 +77,9 @@ namespace api {
 
     class context : public tactic_manager {
         struct add_plugins {  add_plugins(ast_manager & m); };
-
+        context_params             m_params;
         bool                       m_user_ref_count; //!< if true, the user is responsible for managing reference counters.
+        scoped_ptr<ast_manager>    m_manager;
         scoped_ptr<cmd_context>    m_cmd;
         add_plugins                m_plugins;
         mutex                      m_mux;
@@ -167,6 +169,7 @@ namespace api {
         family_id get_seq_fid() const { return m_seq_fid; }
         datatype_decl_plugin * get_dt_plugin() const { return m_dt_plugin; }
         family_id get_special_relations_fid() const { return m_special_relations_fid; }
+        bool function_calls_enabled() const { return m_params.m_enable_function_call_support; }
 
         bool update_call_analyzer(function_call_analyzer_backend* analyzer);
         void update_function_call_info(unsigned int num_functions, const unsigned int function_ids[],
@@ -233,9 +236,7 @@ namespace api {
         // Polynomial manager & caches
         //
         // -----------------------
-        function_call_analyzer*      m_function_call_analyzer;
-        scoped_ptr<ast_manager>    m_manager;
-        context_params             m_params;
+        api::function_call_analyzer*      m_function_call_analyzer;
     private:
         reslimit                   m_limit;
         pmanager                   m_pmanager;

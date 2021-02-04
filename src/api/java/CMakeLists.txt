@@ -55,7 +55,6 @@ target_include_directories(${Z3_JAVA_LIBRARY_NAME} PRIVATE
   "${PROJECT_BINARY_DIR}/src/api"
   ${JNI_INCLUDE_DIRS}
 )
-
 # FIXME: Should this library have SONAME and VERSION set?
 
 # This prevents CMake from automatically defining ``z3java_EXPORTS``

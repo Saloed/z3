@@ -27,7 +27,6 @@ Revision History:
 class i_expr_pred {
 public:
     virtual bool operator()(expr *e) = 0;
-
     virtual ~i_expr_pred() {}
 };
 
@@ -35,7 +34,6 @@ public:
 class i_sort_pred {
 public:
     virtual bool operator()(sort *s) = 0;
-
     virtual ~i_sort_pred() {}
 };
 
@@ -61,11 +59,7 @@ public:
 
     bool operator()(expr *e);
 
-    void reset() {
-        m_pred_holds.reset();
-        m_visited.reset();
-        m_refs.reset();
-    }
+    void reset() { m_pred_holds.reset(); m_visited.reset(); m_refs.reset(); }
 
 private:
     void visit(expr *e);
@@ -80,12 +74,10 @@ class contains_app {
         app *m_x;
     public:
         pred(app *x) : m_x(x) {}
-
         bool operator()(expr *e) override {
             return m_x == e;
         }
     };
-
     app_ref m_x;
     pred m_pred;
     check_pred m_check;
@@ -156,7 +148,8 @@ protected:
 public:
     map_proc(ast_manager &m) :
             m(m),
-            m_map(m) {}
+        m_map(m)
+    {}
 
     void reset() { m_map.reset(); }
 

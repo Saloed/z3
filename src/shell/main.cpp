@@ -328,29 +328,6 @@ int STD_CALL main(int argc, char ** argv) {
         parse_cmd_line_args(argc, argv);
         env_params::updt_params();
 
-//        enable_trace("mk_clause");
-//        enable_trace("assign_core");
-//         enable_trace("unassigned_atoms");
-
-        enable_trace("xxx");
-//        enable_trace("setup");
-         enable_trace("spacer");
-
-         enable_trace("psolve_verbose");
-
-//         enable_trace("rewriter_visit");
-//         enable_trace("rewriter_subst");
-//         enable_trace("rewriter");
-//         enable_trace("qe");
-
-
-//        enable_trace("proof_gen_bug");
-//        enable_trace("mk_conflict_proof");
-//        enable_trace("mk_proof");
-//        enable_trace("unit_bug");
-
-//        enable_trace("get_proof_bug");
-
         if (g_input_file && g_standard_input) {
             error("using standard input to read formula.");
         }

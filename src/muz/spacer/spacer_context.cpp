@@ -126,8 +126,7 @@ void pob::get_skolems(app_ref_vector &v) {
 }
 
 std::ostream &pob::display(std::ostream &out, bool full) const {
-    out << pt().head()->get_name() << "\n";
-    pt().display(out) << "\n"
+        out << pt().head()->get_name ()
                       << " level: " << level()
                       << " depth: " << depth()
                       << " post_id: " << post()->get_id()
@@ -254,10 +253,6 @@ pob *derivation::create_next_child(model &mdl) {
     expr_ref_vector summaries (m);
     app_ref_vector vars(m);
 
-    XXX("Next child\n")
-    XXX(""; display(tout) << "\n")
-    XXX("Model:\n"; tout << mdl << "\n")
-
     // -- find first may premise
     while (m_active < m_premises.size() && m_premises[m_active].is_must()) {
         summaries.push_back (m_premises[m_active].get_summary ());
@@ -270,20 +265,6 @@ pob *derivation::create_next_child(model &mdl) {
     summaries.push_back (m_trans);
     m_trans = mk_and (summaries);
     summaries.reset ();
-
-    XXX("Premises:\n";
-        for (auto &&premis: m_premises) {
-            tout << "Oidx: " << premis.get_oidx() << " : " << mk_pp(premis.get_summary(), m) << "\n";
-        }
-    )
-
-    XXX("Trans:\n" << mk_pp(m_trans, m) << "\n")
-
-    XXX("Vars:\n";
-        for (auto &&var: vars) {
-            tout << mk_pp(var, m) << "\n";
-        }
-    )
 
     if (!vars.empty()) {
         timeit _timer1 (is_trace_enabled("spacer_timeit"),
@@ -339,11 +320,6 @@ pob *derivation::create_next_child(model &mdl) {
         exist_skolemize(post.get(), vars, post);
     }
 
-    TRACE("xxx", tout << "Call o2n: " << mk_pp(post.get(), m) << "\n";
-            tout << "Active: " << m_active << "\n";
-            auto &&premise = m_premises[m_active];
-            tout << "Premise: " << mk_pp(premise.get_summary(), m) << " Oidx: " << premise.get_oidx() << "\n";
-    );
     get_manager ().formula_o2n (post.get (), post,
                                 m_premises [m_active].get_oidx (),
                                 vars.empty());
@@ -445,33 +421,7 @@ pob *derivation::create_next_child ()
     return create_next_child (*mdl);
 }
 
-std::ostream &derivation::display(std::ostream &out) const {
-    out << "Derivation: " << this << "\n";
-    out << "Parent:\n";
-    m_parent.display(out, true);
-    out << "\nTrans:\n" << m_trans << "\n";
-    out << "Evars: " << m_evars << "\n";
-    out << "active: " << m_active << "\n";
-    for (unsigned i = 0; i < m_premises.size(); ++i) {
-        out << i << " | ";
-        m_premises[i].display(out) << "\n";
-    }
-    return out;
-}
-
 /// derivation::premise
-
-std::ostream &derivation::premise::display(std::ostream &out) const {
-    out << "Premise: " << this << "\n";
-    out << "PT: {\n";
-    m_pt.display(out);
-    out << "}\n";
-    out << "must: " << m_must << " oidx: " << m_oidx << "\n";
-    out << "Summary: " << m_summary << "\n";
-    out << "Vars: " << m_ovars << "\n";
-    return out;
-}
-
 
 derivation::premise::premise (pred_transformer &pt, unsigned oidx,
                               expr *summary, bool must,
@@ -777,14 +727,6 @@ std::ostream& pred_transformer::display(std::ostream& out) const
         rm.display_smt2(*rules()[i], out) << "\n";
     }
     out << "transition\n" << mk_pp(transition(), m) << "\n";
-    out << "formulas\nLemmas\n";
-    for (auto &lemma : m_frames.lemmas()) {
-            out << mk_pp(lemma->get_expr(), m) << "\n";
-    }
-    out << "BG invs\n";
-    for (auto &lemma : m_frames.get_bg_invs()) {
-        out << mk_pp(lemma->get_expr(), m) << "\n";
-    }
     return out;
 }
 
@@ -1332,9 +1274,6 @@ bool pred_transformer::is_blocked (pob &n, unsigned &uses_level)
     // XXX quic3: not all lemmas are asserted at the post-condition
     lbool res = m_solver->check_assumptions (post, _aux, _aux,
                                             0, nullptr, 0);
-
-    XXX("Is blocked: " << res << "\nPT:\n"; display(tout) << "\nPOB:\n"; n.display(tout, true) << "\n")
-
     if (res == l_false) {
         uses_level = m_solver->uses_level();
     }
@@ -2280,9 +2219,6 @@ pob* pred_transformer::pob_manager::mk_pob(pob *parent,
     pob p(parent, m_pt, level, depth, false);
     p.set_post(post, b);
 
-    TRACE("xxx", tout << "create pob p:\n"; p.display(tout, true) << "\n";);
-
-
     if (m_pobs.contains(p.post())) {
         for (auto *f : m_pobs[p.post()]) {
             if (f->parent() == parent && !f->is_in_queue()) {
@@ -2294,9 +2230,6 @@ pob* pred_transformer::pob_manager::mk_pob(pob *parent,
 
     pob* n = alloc(pob, parent, m_pt, level, depth);
     n->set_post(post, b);
-
-    TRACE("xxx", tout << "create pob n:\n"; n->display(tout, true) << "\n";);
-
     m_pinned.push_back(n);
 
     if (m_pobs.contains(n->post())) {
@@ -2974,7 +2907,6 @@ model_ref context::get_model()
     get_level_property(m_inductive_lvl, refs, rs, use_bg_invs());
     inductive_property ex(m, const_cast<model_converter_ref&>(m_mc), rs);
     ex.to_model (model);
-    TRACE("xxx", tout << "Model refs:\n" << mk_pp_vec(refs.size(), reinterpret_cast<ast **>(refs.c_ptr()), m) << "\n";);
     return model;
 }
 
@@ -3070,13 +3002,6 @@ void context::display_certificate(std::ostream &out) const {
 
 std::ostream &context::display(std::ostream &out) const {
     out << "Context:\n";
-    out << "Solver 0:\n";
-    m_pool0->display(out);
-    out << "\nSolver 1:\n";
-    m_pool1->display(out);
-    out << "\nSolver 2:\n";
-    m_pool2->display(out);
-
     out << "\nDatalog ctx:\n";
     m_context->display(out);
 
@@ -3098,28 +3023,6 @@ std::ostream &context::display(std::ostream &out) const {
     return out;
 }
 
-class callback_state {
-};
-
-void new_lemma_eh(void *state, expr *lemma, unsigned level) {
-    TRACE("xxx", tout << "New lemma eh\n";);
-}
-
-void predecessor_eh(void *state) {
-    TRACE("xxx", tout << "Predecessor eh\n";);
-}
-
-void unfold_eh(void *state) {
-    TRACE("xxx", tout << "Unfold eh\n";);
-}
-
-
-void register_special_callback(context &ctx) {
-    callback_state *state = alloc(callback_state);
-    spacer_callback *callback = alloc(user_callback, ctx, state, &new_lemma_eh, &predecessor_eh, &unfold_eh);
-    ctx.callbacks().push_back(callback);
-}
-
 ///this is where everything starts
 lbool context::solve_core (unsigned from_lvl)
 {
@@ -3139,26 +3042,14 @@ lbool context::solve_core (unsigned from_lvl)
         m_expanded_lvl = infty_level ();
         m_stats.m_max_query_lvl = lvl;
 
-        if (check_reachability()) {
-
-            TRACE("xxx", tout << "Reachable. Return true\n";);
-
-            return l_true;
-        }
+        if (check_reachability()) { return l_true; }
 
         if (lvl > 0 && m_use_propagate)
-            if (propagate(m_expanded_lvl, lvl, UINT_MAX)) {
-                dump_json();
-
-                TRACE("xxx", tout << "Propagate. Return false\n";);
-
-                return l_false;
-            }
+            if (propagate(m_expanded_lvl, lvl, UINT_MAX)) { dump_json(); return l_false; }
 
         dump_json();
 
         if (is_inductive()){
-            TRACE("xxx", tout << "Is inductive. Return false\n";);
             return l_false;
         }
 
@@ -3260,8 +3151,6 @@ void context::log_add_lemma(pred_transformer &pt, lemma &new_lemma) {
 //
 bool context::check_reachability ()
 {
-    TRACE("xxx", tout << "Check reachability\n";);
-
     scoped_watch _w_(m_reach_watch);
 
     timeit _timer (get_verbosity_level () >= 1,
@@ -3372,9 +3261,6 @@ bool context::is_requeue(pob &n) {
 /// check whether node n is concretely reachable
 bool context::is_reachable(pob &n)
 {
-
-    TRACE("xxx", tout << "Is reachable:\n"; n.display(tout, true) << "\n";);
-
     scoped_watch _w_(m_is_reach_watch);
     // XXX hold a reference for n during this call.
     // XXX Should convert is_reachable() to accept pob_ref as argument
@@ -3460,8 +3346,6 @@ bool context::is_reachable(pob &n)
     IF_VERBOSE(1, verbose_stream () << (next ? " X " : " T ")
                << std::fixed << std::setprecision(2)
                << watch.get_seconds () << "\n";);
-
-    TRACE("xxx", tout << "Is reachable has next == " << (next != nullptr) << "\n";);
 
     // recurse on the new proof obligation
     return next ? is_reachable(*next) : true;
@@ -3581,8 +3465,6 @@ lbool context::handle_unknown(pob &n, const datalog::rule *r, model &model) {
 /// out contains new pobs to add to the queue in case the result is l_undef
 lbool context::expand_pob(pob& n, pob_ref_buffer &out)
 {
-    TRACE("xxx", tout << "Expand pob:\n"; n.display(tout, true) << "\n";);
-
     SASSERT(out.empty());
     pob::on_expand_event _evt(n);
 
@@ -3638,11 +3520,8 @@ lbool context::expand_pob(pob& n, pob_ref_buffer &out)
     switch (res) {
         //reachable but don't know if this is purely using UA
     case l_true: {
-        XXX("Reachable\n")
         // update stats
         m_stats.m_num_reuse_reach += num_reuse_reach;
-
-        TRACE("xxx", tout << "is concrete: " << is_concrete << "\n";);
 
         // must-reachable
         if (is_concrete) {
@@ -3827,9 +3706,6 @@ lbool context::expand_pob(pob& n, pob_ref_buffer &out)
 bool context::propagate(unsigned min_prop_lvl,
                         unsigned max_prop_lvl, unsigned full_prop_lvl)
 {
-
-    TRACE("xxx", tout << "Propagate\n";);
-
     scoped_watch _w_(m_propagate_watch);
 
     if (min_prop_lvl == infty_level()) { return false; }
@@ -4004,9 +3880,6 @@ bool context::create_children(pob& n, datalog::rule const& r,
     }
 
     expr_ref_vector lits = compute_implicant_literals (mdl, forms);
-
-    XXX("Lits: " << lits << "\n")
-
     expr_ref phi = mk_and (lits);
 
     // primed variables of the head

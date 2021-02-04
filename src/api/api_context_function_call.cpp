@@ -17,7 +17,7 @@ namespace api {
     }
 
     bool check_function_call_enabled(api::context *ctx) {
-        if (!ctx->m_params.m_enable_function_call_support) {
+        if (!ctx->function_calls_enabled()) {
             ctx->set_error_code(Z3_EXCEPTION, "Function calls support disabled");
             return false;
         }
@@ -26,7 +26,7 @@ namespace api {
 
     expr *function_call_analyzer::find_precondition(expr *expression, unsigned int function_id, expr **in_args,
                                                     unsigned int num_in_args, expr **out_args,
-                                                    unsigned int num_out_args) {
+                                                    unsigned int num_out_args) const {
         if (!check_function_call_enabled(m_api_context)) return nullptr;
         XXX("Run analyzer for function " << function_id << "\n")
         struct _Z3_ast *result = m_analyzer->analyze(reinterpret_cast<struct _Z3_context *>(m_api_context),

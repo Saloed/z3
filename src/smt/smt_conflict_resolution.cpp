@@ -976,7 +976,6 @@ namespace smt {
                 CTRACE("get_proof_bug_after", invocation_counter >= DUMP_AFTER_NUM_INVOCATIONS, if (pr != 0) tout << js->get_name() << "\n";);
                 CTRACE("get_proof_bug_after", invocation_counter >= DUMP_AFTER_NUM_INVOCATIONS, if (pr != 0) js->display_debug_info(*this, tout););
                 prs.push_back(pr);
-
                 unsigned num_lits = cls->get_num_literals();
                 unsigned i = 0;
                 SASSERT(l == false_literal || l == cls->get_literal(0) || l == cls->get_literal(1));

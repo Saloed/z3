@@ -1559,14 +1559,14 @@ ast_manager::~ast_manager() {
         SASSERT(!roots.empty());
         for (unsigned i = 0; i < roots.size(); ++i) {
             ast* a = roots[i];
-//            DEBUG_CODE(
-//                std::cout << "Leaked: ";
-//                if (is_sort(a)) {
-//                    std::cout << to_sort(a)->get_name() << "\n";
-//                }
-//                else {
-//                    std::cout << mk_ll_pp(a, *this, false) << "id: " << a->get_id() << "\n";
-//                });
+            DEBUG_CODE(
+                std::cout << "Leaked: ";
+                if (is_sort(a)) {
+                    std::cout << to_sort(a)->get_name() << "\n";
+                }
+                else {
+                    std::cout << mk_ll_pp(a, *this, false) << "id: " << a->get_id() << "\n";
+                });
             a->m_ref_count = 0;
             delete_node(a);
         }
