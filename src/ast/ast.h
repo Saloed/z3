@@ -1550,6 +1550,7 @@ protected:
     u_map<unsigned>           m_debug_free_indices;
     std::fstream*             m_trace_stream;
     bool                      m_trace_stream_owner;
+    bool                      m_enable_function_call_support;
 #ifdef Z3DEBUG
     bool slow_not_contains(ast const * n);
 #endif
@@ -1654,6 +1655,8 @@ public:
 
     user_sort_plugin * get_user_sort_plugin() const { return static_cast<user_sort_plugin*>(get_plugin(m_user_sort_family_id)); }
 
+    void enable_function_call_support();
+    bool enabled_function_call_support() { return m_enable_function_call_support; }
     function_call::function_call_context *get_function_call_context() const { return m_function_call_context; }
 
     /**

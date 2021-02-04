@@ -2,8 +2,8 @@ find_package(Java REQUIRED)
 find_package(JNI REQUIRED)
 include(UseJava)
 
-set(Z3_JAVA_PACKAGE_PREFIX "saloed/z3")
-set(Z3_JAVA_PACKAGE_NAME "saloed.z3")
+set(Z3_JAVA_PACKAGE_PREFIX "com/microsoft/z3")
+set(Z3_JAVA_PACKAGE_NAME "com.microsoft.z3")
 set(Z3_JAVA_LIBRARY_NAME "z3java-function-calls")
 
 # Sanity check for dirty source tree
@@ -61,7 +61,7 @@ target_include_directories(${Z3_JAVA_LIBRARY_NAME} PRIVATE
 # This prevents CMake from automatically defining ``z3java_EXPORTS``
 set_property(TARGET ${Z3_JAVA_LIBRARY_NAME} PROPERTY DEFINE_SYMBOL "")
 
-# Rule to generate the ``saloed.z3.enumerations`` package
+# Rule to generate the ``com.microsoft.z3.enumerations`` package
 # FIXME: This list of files is fragile
 set(Z3_JAVA_ENUMERATION_PACKAGE_FILES
   Z3_ast_kind.java
@@ -240,7 +240,7 @@ add_custom_command(OUTPUT ${Z3_JAVA_LIBRARY_FULL_NAME_ABSOLUTE}
       ${ADD_CUSTOM_COMMAND_USES_TERMINAL_ARG}
 )
 
-# Rule to build ``saloed.z3.jar``
+# Rule to build ``com.microsoft.z3.jar``
 # TODO: Should we set ``CMAKE_JNI_TARGET`` to ``TRUE``?
 add_jar(z3JavaJar
   SOURCES ${Z3_JAVA_JAR_SOURCE_FILES_FULL_PATH}

@@ -678,7 +678,7 @@ bool cmd_context::logic_has_array() const {
 }
 
 bool cmd_context::logic_has_function_call() const {
-    return !has_logic() || smt_logics::logic_has_function_call(m_logic);
+    return m_params.m_enable_function_call_support && !has_logic() || smt_logics::logic_has_function_call(m_logic);
 }
 
 bool cmd_context::logic_has_datatype() const {
@@ -705,7 +705,9 @@ void cmd_context::init_manager_core(bool new_manager) {
         register_plugin(symbol("fpa"),      alloc(fpa_decl_plugin), logic_has_fpa());
         register_plugin(symbol("datalog_relation"), alloc(datalog::dl_decl_plugin), !has_logic());
         register_plugin(symbol("specrels"), alloc(special_relations_decl_plugin), !has_logic());
-        register_plugin(symbol("function_call"),  alloc(function_call_decl_plugin), logic_has_function_call());
+        if (m_params.m_enable_function_call_support) {
+            register_plugin(symbol("function_call"), alloc(function_call_decl_plugin), logic_has_function_call());
+        }
     }
     else {
         // the manager was created by an external module

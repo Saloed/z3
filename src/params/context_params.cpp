@@ -113,6 +113,8 @@ void context_params::set(char const * param, char const * value) {
     }
     else if (p == "smtlib2_compliant") {
         set_bool(m_smtlib2_compliant, param, value);
+    } else if (p == "enable_function_call_support") {
+        set_bool(m_enable_function_call_support, param, value);
     }
     else {
         param_descrs d;
@@ -145,6 +147,7 @@ void context_params::updt_params(params_ref const & p) {
     m_debug_ref_count   = p.get_bool("debug_ref_count", m_debug_ref_count);
     m_smtlib2_compliant = p.get_bool("smtlib2_compliant", m_smtlib2_compliant);
     m_statistics        = p.get_bool("stats", m_statistics);
+    m_enable_function_call_support = p.get_bool("enable_function_call_support", m_enable_function_call_support);
 }
 
 void context_params::collect_param_descrs(param_descrs & d) {
@@ -161,6 +164,7 @@ void context_params::collect_param_descrs(param_descrs & d) {
     d.insert("debug_ref_count", CPK_BOOL, "debug support for AST reference counting", "false");
     d.insert("smtlib2_compliant", CPK_BOOL, "enable/disable SMT-LIB 2.0 compliance", "false");
     d.insert("stats", CPK_BOOL, "enable/disable statistics", "false");
+    d.insert("enable_function_call_support", CPK_BOOL, "enables support for function calls", "false");
     // statistics are hidden as they are controlled by the /st option.
     collect_solver_param_descrs(d);
 }
@@ -199,6 +203,8 @@ ast_manager * context_params::mk_ast_manager() {
         r->enable_int_real_coercions(false);
     if (m_debug_ref_count)
         r->debug_ref_count();
+    if(m_enable_function_call_support)
+        r->enable_function_call_support();
     return r;
 }
 

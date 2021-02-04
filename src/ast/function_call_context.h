@@ -5,6 +5,7 @@
 #include "expr_map.h"
 #include "util/vector.h"
 #include "util/map.h"
+#include "api_context_function_call.h"
 
 namespace function_call {
 

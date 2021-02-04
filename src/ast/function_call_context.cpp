@@ -4,6 +4,7 @@
 #include "function_call_context.h"
 #include "ast_pp.h"
 #include "function_call_decl_plugin.h"
+#include "api/api_context_function_call.h"
 
 
 unsigned parse_id(expr *id_expr, ast_manager &m) {
@@ -97,6 +98,7 @@ function_call::expanded_call function_call::function_call_context::expand_call(e
 function_call::function_call_context::function_call_context(ast_manager &m)
         : m(m), m_function_call_analyzer(nullptr), axiom_storage(m) {
     function_call_family_id = m.mk_family_id("function_call");
+    std::cout << "Create function call context" << std::endl;
 }
 
 expr *function_call::function_call_context::find_function_call(expr *root) {

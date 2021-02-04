@@ -1465,10 +1465,16 @@ void ast_manager::init() {
     inc_ref(m_true);
     m_false = mk_const(m_basic_family_id, OP_FALSE);
     inc_ref(m_false);
-
-    m_function_call_context = alloc(function_call::function_call_context, *this);
+    m_enable_function_call_support = false;
+    m_function_call_context = nullptr;
 }
 
+void ast_manager::enable_function_call_support(){
+    m_enable_function_call_support = true;
+    if (m_function_call_context == nullptr) {
+        m_function_call_context = alloc(function_call::function_call_context, *this);
+    }
+}
 
 template<typename T>
 static void mark_array_ref(ast_mark& mark, unsigned sz, T * const * a) {

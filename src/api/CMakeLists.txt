@@ -65,6 +65,7 @@ z3_add_component(api
     api_stats.cpp
     api_tactic.cpp
     api_function_calls.cpp
+    api_context_function_call.cpp
     z3_replayer.cpp
     ${full_path_generated_files}
   COMPONENT_DEPENDENCIES

@@ -61,7 +61,9 @@ void reg_decl_plugins(ast_manager & m) {
     if (!m.get_plugin(m.mk_family_id(symbol("specrels")))) {
         m.register_plugin(symbol("specrels"), alloc(special_relations_decl_plugin));
     }
-    if (!m.get_plugin(m.mk_family_id(symbol("function_call")))) {
-        m.register_plugin(symbol("function_call"), alloc(function_call_decl_plugin));
+    if (m.enabled_function_call_support()) {
+        if (!m.get_plugin(m.mk_family_id(symbol("function_call")))) {
+            m.register_plugin(symbol("function_call"), alloc(function_call_decl_plugin));
+        }
     }
 }

@@ -3999,7 +3999,9 @@ bool context::create_children(pob& n, datalog::rule const& r,
     forms.push_back(pt.get_transition(r));
     forms.push_back(n.post());
 
-    m.get_function_call_context()->extend_forms_with_generated_axioms(forms);
+    if (m.enabled_function_call_support()) {
+        m.get_function_call_context()->extend_forms_with_generated_axioms(forms);
+    }
 
     expr_ref_vector lits = compute_implicant_literals (mdl, forms);
 

@@ -42,6 +42,7 @@ Revision History:
 #include "api/z3.h"
 #include "api/api_util.h"
 #include "api/api_polynomial.h"
+#include "api/api_context_function_call.h"
 
 namespace smtlib {
     class parser;
@@ -53,17 +54,6 @@ namespace realclosure {
 
 namespace api {
 
-
-    class function_call_analyzer {
-    public:
-        explicit function_call_analyzer(context *context, function_call_analyzer_backend *analyzer);
-        expr *find_precondition(expr *expression, unsigned function_id, expr** in_args, unsigned num_in_args, expr** out_args, unsigned num_out_args);
-        virtual ~function_call_analyzer();
-
-    private:
-        context* m_api_context;
-        function_call_analyzer_backend* m_analyzer;
-    };
 
     class seq_expr_solver : public expr_solver {
         ast_manager& m;
@@ -86,9 +76,8 @@ namespace api {
 
     class context : public tactic_manager {
         struct add_plugins {  add_plugins(ast_manager & m); };
-        context_params             m_params;
+
         bool                       m_user_ref_count; //!< if true, the user is responsible for managing reference counters.
-        scoped_ptr<ast_manager>    m_manager;
         scoped_ptr<cmd_context>    m_cmd;
         add_plugins                m_plugins;
         mutex                      m_mux;
@@ -133,9 +122,7 @@ namespace api {
 
         event_handler *            m_interruptable; // Reference to an object that can be interrupted by Z3_interrupt
 
-        function_call_analyzer*      m_function_call_analyzer;
-
-     public:
+    public:
         // Scoped obj for setting m_interruptable
         class set_interruptable {
             context & m_ctx;
@@ -246,6 +233,9 @@ namespace api {
         // Polynomial manager & caches
         //
         // -----------------------
+        function_call_analyzer*      m_function_call_analyzer;
+        scoped_ptr<ast_manager>    m_manager;
+        context_params             m_params;
     private:
         reslimit                   m_limit;
         pmanager                   m_pmanager;

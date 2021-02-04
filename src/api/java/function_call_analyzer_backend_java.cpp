@@ -48,7 +48,7 @@ function_call_analyzer_backend_java::function_call_analyzer_backend_java(
 
 jmethodID function_call_analyzer_backend_java::get_analyzer_method() {
     if (m_analyzer_method == nullptr) {
-        m_native_cls = env->FindClass("saloed/z3/Native");
+        m_native_cls = env->FindClass("com/microsoft/z3/Native");
         m_analyzer_method = env->GetStaticMethodID(
                 m_native_cls,
                 "INTERNALrunFunctionCallAnalyzer",
