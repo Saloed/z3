@@ -51,7 +51,6 @@ Notes:
 #include "muz/transforms/dl_mk_rule_inliner.h"
 #include "muz/spacer/spacer_qe_project.h"
 #include "muz/spacer/spacer_sat_answer.h"
-#include "spacer_callback.h"
 #include "ast/function_call_context.h"
 
 #define WEAKNESS_MAX 65535
@@ -125,15 +124,15 @@ void pob::get_skolems(app_ref_vector &v) {
     }
 }
 
-std::ostream &pob::display(std::ostream &out, bool full) const {
+    std::ostream &pob::display(std::ostream &out, bool full) const {
         out << pt().head()->get_name ()
-                      << " level: " << level()
-                      << " depth: " << depth()
-                      << " post_id: " << post()->get_id()
-                      << (is_in_queue() ? " in_queue" : "");
-    if (full) out << "\n" << m_post;
-    return out;
-}
+            << " level: " << level()
+            << " depth: " << depth()
+            << " post_id: " << post()->get_id()
+            << (is_in_queue() ? " in_queue" : "");
+        if (full) out << "\n" << m_post;
+        return out;
+    }
 
 // ----------------
 // pob_queue
@@ -213,8 +212,8 @@ void derivation::add_premise (pred_transformer &pt,
 
 
 pob *derivation::create_first_child (model &mdl) {
-    if (m_premises.empty())
-        return nullptr;
+    if (m_premises.empty()) 
+        return nullptr; 
     m_active = 0;
     return create_next_child(mdl);
 }
@@ -225,14 +224,14 @@ void derivation::exist_skolemize(expr* fml, app_ref_vector& vars, expr_ref& res)
         res = fml;
         return;
     }
-
+    
     std::stable_sort(vars.c_ptr(), vars.c_ptr() + vars.size(), sk_lt_proc());
     unsigned j = 1;
-    for (unsigned i = 1; i < vars.size(); ++i)
-        if (vars.get(i) != vars.get(j - 1))
+    for (unsigned i = 1; i < vars.size(); ++i) 
+        if (vars.get(i) != vars.get(j - 1)) 
             vars[j++] = vars.get(i);
     vars.shrink(j);
-
+    
     TRACE("spacer", tout << "Skolemizing: " << vars << "\n";
           tout << "from " << mk_pp(fml, m) << "\n";);
 
@@ -374,7 +373,7 @@ pob *derivation::create_next_child ()
 
     // get an implicant of the summary
     expr_ref_vector u(m);
-    u.push_back (rf->get ());
+    u.push_back (rf->get ());    
     expr_ref v = mk_and (compute_implicant_literals(*mdl, u));
 
     // XXX The summary is not used by anyone after this point
@@ -399,8 +398,8 @@ pob *derivation::create_next_child ()
 
         // variables to eliminate
         vars.append (rf->aux_vars ().size (), rf->aux_vars ().c_ptr ());
-        for (unsigned i = 0, sz = pt.head ()->get_arity (); i < sz; ++i) {
-            vars.push_back(m.mk_const(pm.o2n(pt.sig(i), 0)));
+        for (unsigned i = 0, sz = pt.head ()->get_arity (); i < sz; ++i) { 
+            vars.push_back(m.mk_const(pm.o2n(pt.sig(i), 0))); 
         }
 
         if (!vars.empty ()) {
@@ -435,13 +434,13 @@ derivation::premise::premise (pred_transformer &pt, unsigned oidx,
     manager &sm = m_pt.get_manager ();
 
     unsigned sig_sz = m_pt.head ()->get_arity ();
-    for (unsigned i = 0; i < sig_sz; ++i) {
-        m_ovars.push_back(m.mk_const(sm.o2o(pt.sig(i), 0, m_oidx)));
+    for (unsigned i = 0; i < sig_sz; ++i) { 
+        m_ovars.push_back(m.mk_const(sm.o2o(pt.sig(i), 0, m_oidx))); 
     }
 
-    if (aux_vars)
-        for (app* v : *aux_vars)
-            m_ovars.push_back(m.mk_const(sm.n2o(v->get_decl(), m_oidx)));
+    if (aux_vars) 
+        for (app* v : *aux_vars) 
+            m_ovars.push_back(m.mk_const(sm.n2o(v->get_decl(), m_oidx))); 
 }
 
 /// \brief Updated the summary.
@@ -785,8 +784,8 @@ void pred_transformer::init_sig()
 
 void pred_transformer::ensure_level(unsigned level)
 {
-    if (is_infty_level(level))
-        return;
+    if (is_infty_level(level)) 
+        return; 
 
     while (m_frames.size() <= level) {
         m_frames.add_frame ();
@@ -800,8 +799,8 @@ bool pred_transformer::is_must_reachable(expr* state, model_ref* model)
     SASSERT (state);
     // XXX This seems to mis-handle the case when state is
     // reachable using the init rule of the current transformer
-    if (m_reach_facts.empty())
-        return false;
+    if (m_reach_facts.empty()) 
+        return false;     
 
     m_reach_solver->push ();
     m_reach_solver->assert_expr (state);
@@ -1140,7 +1139,7 @@ expr_ref pred_transformer::get_cover_delta(func_decl* p_orig, int level)
 
     // adjust result according to model converter.
     model_ref md = alloc(model, m);
-    md->register_decl(m_head, result);
+    md->register_decl(m_head, result);    
     model_converter_ref mc = ctx.get_model_converter();
     apply(mc, md);
     if (p_orig->get_arity() == 0) {
@@ -1197,9 +1196,9 @@ expr_ref pred_transformer::get_origin_summary (model &mdl,
             TRACE("spacer", tout << "Summary not true in the model: " << mk_pp(s, m) << "\n";);
         }
     }
-
+    
     // -- pick an implicant
-
+    
     return mk_and(compute_implicant_literals(mdl, summary));
 }
 
@@ -1274,8 +1273,8 @@ bool pred_transformer::is_blocked (pob &n, unsigned &uses_level)
     // XXX quic3: not all lemmas are asserted at the post-condition
     lbool res = m_solver->check_assumptions (post, _aux, _aux,
                                             0, nullptr, 0);
-    if (res == l_false) {
-        uses_level = m_solver->uses_level();
+    if (res == l_false) { 
+        uses_level = m_solver->uses_level(); 
     }
     return res == l_false;
 }
@@ -1406,7 +1405,7 @@ lbool pred_transformer::is_reachable(pob& n, expr_ref_vector* core,
         if (core) { core->reset(); }
         if (model && model->get()) {
             r = find_rule(**model, is_concrete, reach_pred_used, num_reuse_reach);
-            TRACE("spacer",
+            TRACE("spacer", 
                   tout << "reachable is_sat: " << is_sat << " "
                   << r << " is_concrete " << is_concrete << " rused: " << reach_pred_used << "\n";
                   ctx.get_datalog_context().get_rule_manager().display_smt2(*r, tout) << "\n";
@@ -2947,12 +2946,12 @@ expr_ref context::get_ground_sat_answer() const {
                    << "Sat answer unavailable when result is false\n";);
         return expr_ref(m);
     }
-
+    
     // convert a ground refutation into a linear counterexample
     // only works for linear CHC systems
     expr_ref_vector cex(m);
     proof_ref pf = get_ground_refutation();
-
+    
     proof_ref_vector premises(m);
     expr_ref conclusion(m);
     svector<std::pair<unsigned, unsigned>> positions;
@@ -2970,7 +2969,7 @@ expr_ref context::get_ground_sat_answer() const {
             pf.reset();
             break;
         }
-
+        
         premises.reset();
         conclusion.reset();
         positions.reset();
@@ -2980,7 +2979,7 @@ expr_ref context::get_ground_sat_answer() const {
     if (pf) {
         cex.push_back(m.get_fact(pf));
     }
-
+    
     TRACE ("spacer", tout << "ground cex\n" << cex << "\n";);
 
     return mk_and(cex);
@@ -3669,7 +3668,7 @@ lbool context::expand_pob(pob& n, pob_ref_buffer &out)
             if (r && r->get_uninterpreted_tail_size() > 0) {
                 // do not trust reach_pred_used
                 for (unsigned i = 0, sz = reach_pred_used.size(); i < sz; ++i) {
-                    reach_pred_used[i] = false;
+                    reach_pred_used[i] = false; 
                 }
                 has_new_child = create_children(n, *r, *model, reach_pred_used, out);
             }
@@ -3819,7 +3818,7 @@ reach_fact *pred_transformer::mk_rf(pob& n, model &mdl, const datalog::rule& r)
     TRACE ("spacer",
            tout << "Reach fact, before QE:\n";
            tout << res << "\n";
-           tout << "Vars:\n" << vars << "\n";);
+           tout << "Vars:\n" << vars << "\n";);        
 
     {
         timeit _timer1 (is_trace_enabled("spacer_timeit"),

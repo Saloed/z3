@@ -681,7 +681,7 @@ namespace smt {
         m_params.m_mbqi                    = true; // enabling MBQI by default :-)
         // 
         setup_mi_arith();
-        setup_arrays();
+        setup_arrays(); 
         setup_function_calls();
     }
 

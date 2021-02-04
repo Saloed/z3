@@ -717,7 +717,7 @@ void rewriter_tpl<Config>::main_loop(expr * t, expr_ref & result, proof_ref & re
     SASSERT(not_rewriting());
     m_root      = t;
     m_num_qvars = 0;
-    m_num_steps = 0;
+    m_num_steps = 0;    
     if (visit<ProofGen>(t, RW_UNBOUNDED_DEPTH)) {
         result = result_stack().back();
         result_stack().pop_back();

@@ -26,14 +26,14 @@ Revision History:
 
 class i_expr_pred {
 public:
-    virtual bool operator()(expr *e) = 0;
+    virtual bool operator()(expr* e) = 0;
     virtual ~i_expr_pred() {}
 };
 
 
 class i_sort_pred {
 public:
-    virtual bool operator()(sort *s) = 0;
+    virtual bool operator()(sort* s) = 0;
     virtual ~i_sort_pred() {}
 };
 
@@ -48,21 +48,21 @@ public:
 */
 
 class check_pred {
-    i_expr_pred &m_pred;
-    ast_mark m_pred_holds;
-    ast_mark m_visited;
+    i_expr_pred&    m_pred;        
+    ast_mark        m_pred_holds;
+    ast_mark        m_visited;
     expr_ref_vector m_refs;
-    bool m_check_quantifiers;
-public:
-    check_pred(i_expr_pred &p, ast_manager &m, bool check_quantifiers = true) :
-            m_pred(p), m_refs(m), m_check_quantifiers(check_quantifiers) {}
-
-    bool operator()(expr *e);
+    bool            m_check_quantifiers;
+public:        
+    check_pred(i_expr_pred& p, ast_manager& m, bool check_quantifiers = true) : 
+        m_pred(p), m_refs(m), m_check_quantifiers(check_quantifiers) {}
+        
+    bool operator()(expr* e);
 
     void reset() { m_pred_holds.reset(); m_visited.reset(); m_refs.reset(); }
 
-private:
-    void visit(expr *e);
+private:        
+    void visit(expr* e);        
 };
 
 /**
@@ -71,33 +71,33 @@ private:
 
 class contains_app {
     class pred : public i_expr_pred {
-        app *m_x;
+        app* m_x;
     public:
-        pred(app *x) : m_x(x) {}
-        bool operator()(expr *e) override {
+        pred(app* x) : m_x(x) {}
+        bool operator()(expr* e) override {
             return m_x == e;
         }
     };
-    app_ref m_x;
-    pred m_pred;
+    app_ref    m_x;
+    pred       m_pred;
     check_pred m_check;
-
+    
 public:
-    contains_app(ast_manager &m, app *x) :
-            m_x(x, m), m_pred(x), m_check(m_pred, m) {}
-
-    bool operator()(expr *e) {
+    contains_app(ast_manager& m, app* x) : 
+        m_x(x, m), m_pred(x), m_check(m_pred, m) {}
+    
+    bool operator()(expr* e) {
         return m_check(e);
     }
-
-    bool operator()(expr_ref_vector const &v) {
+    
+    bool operator()(expr_ref_vector const& v) {
         return (*this)(v.size(), v.c_ptr());
     }
+    
+    bool operator()(unsigned size, expr* const* es);
 
-    bool operator()(unsigned size, expr *const *es);
-
-    app *x() const { return m_x; }
-
+    app* x() const { return m_x; }
+        
 };
 
 /**
@@ -142,24 +142,24 @@ public:
 */
 class map_proc {
 protected:
-    ast_manager &m;
-    expr_map m_map;
-    ptr_vector<expr> m_args;
-public:
-    map_proc(ast_manager &m) :
-            m(m),
+    ast_manager&      m;
+    expr_map          m_map;
+    ptr_vector<expr>  m_args;        
+public:        
+    map_proc(ast_manager& m):
+        m(m),
         m_map(m)
     {}
-
+    
     void reset() { m_map.reset(); }
-
-    void visit(var *e) { m_map.insert(e, e, nullptr); }
-
-    void visit(quantifier *e);
-
-    void reconstruct(app *a);
-
-    expr *get_expr(expr *e);
+    
+    void visit(var* e) { m_map.insert(e, e, nullptr); }
+    
+    void visit(quantifier* e);
+    
+    void reconstruct(app* a);
+    
+    expr* get_expr(expr* e);
 
 };
 

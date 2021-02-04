@@ -118,7 +118,7 @@ namespace smt {
 
         lbool check(expr_ref_vector const& cube, vector<expr_ref_vector> const& clause) {
             return m_kernel.check(cube, clause);
-        }
+        }        
 
         lbool get_consequences(expr_ref_vector const& assumptions, expr_ref_vector const& vars, expr_ref_vector& conseq, expr_ref_vector& unfixed) {
             return m_kernel.get_consequences(assumptions, vars, conseq, unfixed);
@@ -248,7 +248,7 @@ namespace smt {
         unsigned user_propagate_register(expr* e) {
             return m_kernel.user_propagate_register(e);
         }
-
+        
     };
 
     kernel::kernel(ast_manager & m, smt_params & fp, params_ref const & p) {
@@ -475,6 +475,6 @@ namespace smt {
 
     unsigned kernel::user_propagate_register(expr* e) {
         return m_imp->user_propagate_register(e);
-    }
+    }        
 
 };

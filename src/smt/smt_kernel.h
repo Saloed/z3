@@ -122,7 +122,7 @@ namespace smt {
            \brief Setup the logical context and invoke check.
         */
         lbool setup_and_check();
-
+        
         /**
            \brief Satisfiability check.
         */

@@ -262,7 +262,7 @@ namespace smt {
         literal_vector & antecedents = m_tmp_literal_vector;
         antecedents.reset();
         justification2literals(js, antecedents);
-        for (literal lit : antecedents)
+        for (literal lit : antecedents) 
             r = std::max(r, m_ctx.get_assign_level(lit));
         return r;
     }
@@ -319,7 +319,7 @@ namespace smt {
         TRACE("conflict_", tout << "processing antecedent (level " << lvl << "):";
               m_ctx.display_literal(tout, antecedent);
               m_ctx.display_detailed_literal(tout << " ", antecedent) << "\n";);
-
+        
         if (!m_ctx.is_marked(var) && lvl > m_ctx.get_base_level()) {
             m_ctx.set_mark(var);
             m_ctx.inc_bvar_activity(var);
@@ -353,14 +353,14 @@ namespace smt {
         for (literal l : antecedents)
             process_antecedent(l, num_marks);
         (void)consequent;
-        TRACE("conflict_smt2",
+        TRACE("conflict_smt2", 
               for (literal& l : antecedents) {
                   l.neg();
                   SASSERT(m_ctx.get_assignment(l) == l_false);
               }
               antecedents.push_back(consequent);
               m_ctx.display_literals_smt2(tout, antecedents););
-
+        
     }
 
     /**
@@ -509,7 +509,7 @@ namespace smt {
                 get_manager().trace_stream() << "\n";
             }
 
-            TRACE("conflict", tout << "processing consequent id: " << idx << " lit: " << consequent << " "; m_ctx.display_literal(tout, consequent);
+            TRACE("conflict", tout << "processing consequent id: " << idx << " lit: " << consequent << " "; m_ctx.display_literal(tout, consequent); 
                   m_ctx.display_literal_verbose(tout << " ", consequent) << "\n";
                   tout << "num_marks: " << num_marks << ", js kind: " << js.get_kind() << " level: " << m_ctx.get_assign_level(consequent) << "\n";
                   );
@@ -607,7 +607,7 @@ namespace smt {
     */
     level_approx_set conflict_resolution::get_lemma_approx_level_set() {
         level_approx_set result;
-        for (literal l : m_lemma)
+        for (literal l : m_lemma) 
             result.insert(m_ctx.get_assign_level(l));
         return result;
     }
@@ -659,7 +659,7 @@ namespace smt {
         // The method unmark_justifications must be invoked to reset these caches.
         // Remark: The method reset_unmark_and_justifications invokes unmark_justifications.
         justification2literals_core(js, antecedents);
-        for (literal l : antecedents)
+        for (literal l : antecedents) 
             if (!process_antecedent_for_minimization(l))
                 return false;
         return true;
@@ -1082,7 +1082,7 @@ namespace smt {
         SASSERT(js.get_kind() != b_justification::BIN_CLAUSE);
         CTRACE("visit_b_justification_bug", js.get_kind() == b_justification::AXIOM, tout << "l: " << l << "\n"; m_ctx.display(tout););
 
-        if (js.get_kind() == b_justification::AXIOM)
+        if (js.get_kind() == b_justification::AXIOM) 
             return true;
         SASSERT(js.get_kind() != b_justification::AXIOM);
         if (js.get_kind() == b_justification::CLAUSE) {
@@ -1271,7 +1271,7 @@ namespace smt {
             m_todo_pr.push_back(tp_elem(not_l));
         }
         visit_b_justification(consequent, conflict);
-
+        
         while (!m_todo_pr.empty()) {
             tp_elem & elem = m_todo_pr.back();
 
@@ -1374,7 +1374,7 @@ namespace smt {
         literal_vector & antecedents = m_tmp_literal_vector;
         antecedents.reset();
         justification2literals_core(js, antecedents);
-        for (literal lit : antecedents)
+        for (literal lit : antecedents) 
             process_antecedent_for_unsat_core(lit);
     }
 
