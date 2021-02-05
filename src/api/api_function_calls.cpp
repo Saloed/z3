@@ -39,6 +39,7 @@ Z3_ast Z3_API Z3_mk_function_call(Z3_context c, unsigned fid, unsigned num_args,
             arg_list.push_back(to_expr(args[i]));
         }
         app *a = mk_c(c)->mk_function_call(fid, arg_list.size(), arg_list.c_ptr());
+        if (a == nullptr) return nullptr;
         mk_c(c)->save_ast_trail(a);
         check_sorts(c, a);
         RETURN_Z3(of_ast(a));
