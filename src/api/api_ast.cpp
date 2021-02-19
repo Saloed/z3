@@ -25,6 +25,7 @@ Revision History:
 #include "ast/datatype_decl_plugin.h"
 #include "ast/array_decl_plugin.h"
 #include "ast/pb_decl_plugin.h"
+#include "ast/function_call_decl_plugin.h"
 #include "ast/ast_translation.h"
 #include "ast/ast_pp.h"
 #include "ast/ast_ll_pp.h"
@@ -1288,6 +1289,13 @@ extern "C" {
             case OP_PB_EQ: return Z3_OP_PB_EQ;
             case OP_AT_MOST_K: return Z3_OP_PB_AT_MOST;
             case OP_AT_LEAST_K: return Z3_OP_PB_AT_LEAST;
+            default: return Z3_OP_INTERNAL;
+            }
+        }
+
+        if (mk_c(c)->get_function_call_fid() == _d->get_family_id()) {
+            switch (_d->get_decl_kind()) {
+            case OP_FUNCTION_CALL: return Z3_OP_FUNCTION_CALL;
             default: return Z3_OP_INTERNAL;
             }
         }

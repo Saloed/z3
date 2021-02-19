@@ -112,6 +112,7 @@ namespace api {
         family_id                  m_fpa_fid;
         family_id                  m_seq_fid;
         family_id                  m_special_relations_fid;
+        family_id                  m_function_call_fid;
         datatype_decl_plugin *     m_dt_plugin;
         
         std::string                m_string_buffer; // temporary buffer used to cache strings sent to the "external" world.
@@ -167,6 +168,7 @@ namespace api {
         family_id get_pb_fid() const { return m_pb_fid; }
         family_id get_fpa_fid() const { return m_fpa_fid; }
         family_id get_seq_fid() const { return m_seq_fid; }
+        family_id get_function_call_fid() const { return m_function_call_fid; }
         datatype_decl_plugin * get_dt_plugin() const { return m_dt_plugin; }
         family_id get_special_relations_fid() const { return m_special_relations_fid; }
         bool function_calls_enabled() const { return m_params.m_enable_function_call_support; }
