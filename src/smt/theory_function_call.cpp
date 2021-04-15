@@ -97,7 +97,7 @@ namespace smt {
     }
 
     bool theory_function_call::can_propagate() {
-        return can_analyse();
+        return !known_calls.empty() && can_analyse();
     }
 
     void theory_function_call::propagate() {
