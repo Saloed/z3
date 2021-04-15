@@ -4,34 +4,20 @@
 
 #include <ast/expr_functors.h>
 #include <ast/rewriter/expr_replacer.h>
-#include <unordered_map>
-#include <functional>
-#include "theory_function_call.h"
 #include "smt/smt_context.h"
 #include "smt_model_generator.h"
-
-#include "ast/function_call_context.h"
+#include "theory_function_call.h"
 
 namespace smt {
 
-    theory_function_call::theory_function_call(context &ctx) :
+    theory_function_call::theory_function_call(context& ctx) :
             theory(ctx, ctx.get_manager().mk_family_id("function_call")),
-            m_num_pending_queries(0), known_calls(m) {
+            last_analysed_state_hash(0), known_calls(m) {
     }
 
     void theory_function_call::display(std::ostream &out) const {
-        unsigned num_vars = get_num_vars();
-        if (num_vars == 0) return;
-        out << "Theory function call:\n";
-        for (unsigned v = 0; v < num_vars; v++) {
-            display_var(out, v);
-        }
+        out << "Theory function call:\n" << known_calls << "\n";
     }
-
-    void theory_function_call::display_var(std::ostream &out, theory_var v) const {
-        out << "theory var " << v << "\n";
-    }
-
 
     bool theory_function_call::internalize_atom(app *atom, bool gate_ctx) {
         return internalize_term(atom);
@@ -93,16 +79,16 @@ namespace smt {
 
     void theory_function_call::relevant_eh(app *n) {
         if (!is_function_call(n)) return;
-        m_num_pending_queries++;
+        force_run_analysis();
         if (!ctx.e_internalized(n)) ctx.internalize(n, false);
     }
 
     void theory_function_call::init_search_eh() {
-        m_num_pending_queries = 0;
+        force_run_analysis();
     }
 
     final_check_status theory_function_call::final_check_eh() {
-        if (m_num_pending_queries == 0) return FC_DONE;
+        if (!can_analyse()) return FC_DONE;
         return FC_CONTINUE;
     }
 
@@ -111,211 +97,158 @@ namespace smt {
     }
 
     bool theory_function_call::can_propagate() {
-        return m_num_pending_queries != 0;
+        return can_analyse();
     }
-
-    std::string clause_str(context &ctx, clause &cls) {
-        vector<std::string> literals;
-        for (unsigned i = 0; i < cls.get_num_literals(); ++i) {
-            std::stringstream str_builder;
-            ctx.display_literal_smt2(str_builder, cls.get_literal(i));
-            literals.push_back(str_builder.str());
-        }
-        std::sort(literals.begin(), literals.end());
-
-        std::stringstream str_builder;
-        for (auto &&literal : literals) {
-            str_builder << literal << "\n";
-        }
-        return str_builder.str();
-    }
-
-    template<typename T>
-    void ptr_vec_diff_printer(
-            std::ostream &out,
-            std::unordered_map<unsigned int, std::string> &history,
-            ptr_vector<T> &vec,
-            std::function<void(std::ostream &, T *, unsigned)> element_printer) {
-
-        vector<std::string> added;
-        vector<std::string> changed;
-
-        for (unsigned i = 0; i < vec.size(); ++i) {
-            T *e = vec[i];
-            std::stringstream ss;
-            element_printer(ss, e, i);
-            std::string element_repr = ss.str();
-
-            auto &&it = history.find(i);
-            if (it == history.end()) {
-                added.push_back(element_repr);
-                history.emplace(i, element_repr);
-            } else if (it->second != element_repr) {
-                changed.push_back(element_repr);
-                history.erase(i);
-                history.emplace(i, element_repr);
-            }
-        }
-
-        out << "New:\n";
-        for (auto &it: added) {
-            out << it << "\n";
-        }
-        out << "Changed:\n";
-        for (auto &it: changed) {
-            out << it << "\n";
-        }
-    }
-
-    void print_expr(std::ostream &out, expr *e, unsigned i, context &ctx) {
-        out << i << ": " << mk_pp(e, ctx.get_manager()) << "\n";
-    }
-
 
     void theory_function_call::propagate() {
-        m_propagate_idx++;
+        state_analysed();
         analyze_all_exprs_via_axiom();
-        m_num_pending_queries = 0;
     }
-
-
-//    proof *get_proof_if_available(justification *js) {
-//        if (js == nullptr) return nullptr;
-//        if (strcmp(js->get_name(), "proof-wrapper") != 0) return nullptr;
-//        auto *pw = dynamic_cast<smt::justification_proof_wrapper *>(js);
-//        return pw->m_proof;
-//    }
-
-    struct axiom_expr_info {
-        ptr_vector<expr> exprs;
-        unsigned arg_idx;
-        function_call::expanded_call call;
-    };
 
     void theory_function_call::analyze_all_exprs_via_axiom() {
         vector<function_call::expanded_call> registered_calls;
-        for (auto &&call: known_calls) {
-            auto &&expanded_call = m.get_function_call_context()->expand_call(call);
+        for (auto&& call: known_calls) {
+            auto&& expanded_call = m.get_function_call_context()->expand_call(call);
             registered_calls.push_back(expanded_call);
         }
 
-        vector<axiom_expr_info> relevant_exprs;
-        for (auto &&call : registered_calls) {
-            for (unsigned ai = 0; ai < call.out_args.size(); ai++) {
-                ptr_vector<expr> to_analyze;
-                for (unsigned bv = 0; bv < ctx.m_bool_var2expr.size(); ++bv) {
-                    if (visited_expr.find(bv) != visited_expr.end()) {
-                        continue;
-                    }
-                    visited_expr.emplace(bv);
-                    expr *e = ctx.m_bool_var2expr[bv];
-                    if (e == nullptr) continue;
-                    to_analyze.push_back(e);
-                }
-//                for (unsigned js_idx = 0; js_idx < ctx.m_justifications.size(); ++js_idx) {
-//                    justification *js = ctx.m_justifications[js_idx];
-//                    if (visited_js.find(js) != visited_js.end()) {
-//                        continue;
-//                    }
-//                    visited_js.emplace(js);
-//                    proof *js_proof = get_proof_if_available(js);
-//                    if (js_proof == nullptr) continue;
-//                    to_analyze.push_back(js_proof);
-//                }
-
-
-                for (expr *e: to_analyze) {
-                    ptr_vector<expr> sub = least_logical_subexpr_containing_expr(e, call.out_args[ai].get());
-                    axiom_expr_info info{sub, ai, call};
-                    relevant_exprs.push_back(info);
-                }
-            }
+        ptr_vector<expr> exprs_to_analyze;
+        for (expr* e : ctx.m_bool_var2expr) {
+            if (!e || is_analysed(e)) continue;
+            exprs_to_analyze.push_back(e);
         }
 
-        for (auto &&info : relevant_exprs) {
-            for (auto &&e: info.exprs) {
-                auto &&precondition_ref = m.get_function_call_context()->mk_call_axiom_for_expr(e, info.call);
-                if (!precondition_ref) continue;
-
-                expr *precondition = precondition_ref.get();
-
-                ctx.internalize(precondition, is_quantifier(precondition));
-                ctx.mark_as_relevant(precondition);
-
-                literal lit = mk_eq(e, precondition, is_quantifier(precondition));
-                mk_th_axiom(lit);
+        for (expr* e : exprs_to_analyze) {
+            for (auto&& call : registered_calls) {
+                analyse_expr_via_axiom(e, call);
             }
         }
     }
 
-    void llsce(ast_manager &m, expr *e, expr *target, expr *nearest_logical_parent, ptr_vector<expr> &result,
-               bool match_only_negations) {
-        bool is_matched = m.is_bool(e) && (!match_only_negations || m.is_not(e));
-        if (e == target) {
-            if (is_matched) {
-                result.push_back(e);
-                return;
+    bool theory_function_call::is_analysed(expr* e) const {
+        return visited_expr.contains(e->get_id());
+    }
+
+    void theory_function_call::mark_analysed(expr* e) {
+        visited_expr.insert(e->get_id(), true);
+    }
+
+    void theory_function_call::analyse_expr_via_axiom(expr* e, function_call::expanded_call& call) {
+        for (unsigned ai = 0; ai < call.out_args.size(); ai++) {
+            expr* out_arg = call.out_args[ai].get();
+            ptr_vector<expr> sub_exps = least_logical_subexpr_containing_expr(e, out_arg);
+            for (expr* sub_expr: sub_exps) {
+                expr_precondition_axiom(sub_expr, call);
             }
-            if (nearest_logical_parent != nullptr) {
-                result.push_back(nearest_logical_parent);
-                return;
-            }
-            if (match_only_negations) {
-                // may be no negations
-                return;
-            }
-            UNREACHABLE();
-        }
-        expr *new_parent = is_matched ? e : nearest_logical_parent;
-        switch (e->get_kind()) {
-            case AST_VAR:
-                break;
-            case AST_APP: {
-                app *a = to_app(e);
-                for (unsigned i = 0; i < a->get_num_args(); ++i) {
-                    expr *arg = a->get_arg(i);
-                    llsce(m, arg, target, new_parent, result, match_only_negations);
-                }
-                break;
-            }
-            case AST_QUANTIFIER: {
-                quantifier *q = to_quantifier(e);
-                expr *arg = q->get_expr();
-                llsce(m, arg, target, new_parent, result, match_only_negations);
-                break;
-            }
-            default: UNREACHABLE();
-                break;
         }
     }
 
-    ptr_vector<expr> theory_function_call::least_logical_subexpr_containing_expr(expr *e, expr *target) {
+    void theory_function_call::expr_precondition_axiom(expr* e, function_call::expanded_call& call) {
+        if (is_analysed(e)) return;
+
+        auto&& precondition_ref = m.get_function_call_context()->mk_call_axiom_for_expr(e, call);
+        if (!precondition_ref) return;
+        expr* precondition = precondition_ref.get();
+
+        mark_analysed(e);
+        mark_analysed(precondition);
+
+        ctx.internalize(precondition, is_quantifier(precondition));
+        ctx.mark_as_relevant(precondition);
+
+        literal lit = mk_eq(e, precondition, is_quantifier(precondition));
+        mk_th_axiom(lit);
+    }
+
+    ptr_vector<expr> theory_function_call::least_logical_subexpr_containing_expr(expr* expression, expr* target) {
         ptr_vector<expr> result;
-        llsce(m, e, target, nullptr, result, false);
+        svector<std::pair<expr*, expr*>> todo;
+        todo.push_back(std::make_pair(expression, nullptr));
+        while (!todo.empty()) {
+            auto&& item = todo.back();
+            expr* e = item.first;
+            expr* nearest_logical_parent = item.second;
+            todo.pop_back();
+
+            bool is_logical = m.is_bool(e);
+            if (e == target) {
+                if (is_logical) {
+                    result.push_back(e);
+                    continue;
+                }
+                if (nearest_logical_parent != nullptr) {
+                    result.push_back(nearest_logical_parent);
+                    continue;
+                }
+                UNREACHABLE();
+            }
+            expr* new_parent = is_logical ? e : nearest_logical_parent;
+            switch (e->get_kind()) {
+                case AST_VAR:
+                    break;
+                case AST_APP: {
+                    app* a = to_app(e);
+                    for (unsigned i = 0; i < a->get_num_args(); ++i) {
+                        todo.push_back(std::make_pair(a->get_arg(i), new_parent));
+                    }
+                    break;
+                }
+                case AST_QUANTIFIER: {
+                    todo.push_back(std::make_pair(to_quantifier(e)->get_expr(), new_parent));
+                    break;
+                }
+                default: UNREACHABLE();
+                    break;
+            }
+        }
         return result;
     }
 
-    model_value_proc *theory_function_call::mk_value(enode *n, model_generator &mg) {
+    model_value_proc* theory_function_call::mk_value(enode* n, model_generator& mg) {
         std::cout << "Model for: " << enode_pp(n, ctx) << std::endl;
         return alloc(expr_wrapper_proc, n->get_expr());
     }
 
-    expr_ref mk_implies_simplified(expr_ref &lhs, expr_ref &rhs) {
-        auto &&m = lhs.get_manager();
-        expr *implies = m.mk_or(m.mk_not(lhs), rhs);
+    expr_ref mk_implies_simplified(expr_ref& lhs, expr_ref& rhs) {
+        auto&& m = lhs.get_manager();
+        expr* implies = m.mk_or(m.mk_not(lhs), rhs);
         expr_ref result(implies, m);
         return result;
     }
 
-
-    void theory_function_call::mk_th_axiom(literal &lit) {
+    void theory_function_call::mk_th_axiom(literal& lit) {
         ctx.mark_as_relevant(lit);
         literal lits[1] = {lit};
         ctx.mk_th_axiom(get_id(), 1, lits);
+        XXX("Add function axiom:\n"; ctx.display_literal_smt2(tout, lit); tout << "\n")
     }
 
     bool theory_function_call::build_models() const {
         return false;
+    }
+
+    inline uint64_t hash_combine(uint64_t seed, uint64_t value) {
+        // boost hash_combine
+        return seed ^ value + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    }
+
+    inline uint64_t expr_hash(expr* e) {
+        return reinterpret_cast<uint64_t>(e);
+    }
+
+    uint64_t hash_expr_vector(expr* const* vec, unsigned int size) {
+        uint64_t hash = 17;
+        for (unsigned i = 0; i < size; i++) {
+            uint64_t el_hash = expr_hash(vec[i]);
+            hash = hash_combine(hash, el_hash);
+        }
+        return hash;
+    }
+
+    uint64_t theory_function_call::state_hash() const {
+        uint64_t bv2expr_hash = hash_expr_vector(ctx.m_bool_var2expr.c_ptr(), ctx.m_bool_var2expr.size());
+        uint64_t calls_hash = hash_expr_vector(known_calls.c_ptr(), known_calls.size());
+        return hash_combine(calls_hash, bv2expr_hash);
     }
 
 }

@@ -17,6 +17,8 @@ namespace function_call {
 
         virtual ~call_axiom_storage();
 
+        std::ostream& display(std::ostream& out);
+
     private:
         u_map<unsigned> calls;
         vector<expr_map*> axioms;
@@ -81,8 +83,11 @@ namespace function_call {
 
         u_map<unsigned> f_decl_to_f_id;
         u_map<unsigned> f_call_to_f_id;
+        u_map<bool> expressions_with_no_axiom;
 
         ast_manager& m;
         family_id function_call_family_id;
+
+        unsigned analyzer_calls = 0;
     };
 }

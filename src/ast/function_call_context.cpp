@@ -49,7 +49,10 @@ expr_ref_vector function_call::function_call_context::generated_axioms(expr* cal
 }
 
 expr_ref function_call::function_call_context::mk_call_axiom_for_expr(expr* e, expanded_call& call_info) {
-
+    auto e_id = e->get_id();
+    if (expressions_with_no_axiom.contains(e_id)) {
+        return expr_ref(m);
+    }
     auto&& call_axioms = axiom_storage.get_call_axioms(call_info.call_expr.get());
     if (call_axioms->contains(e)) {
         expr* axiom;
@@ -60,13 +63,16 @@ expr_ref function_call::function_call_context::mk_call_axiom_for_expr(expr* e, e
 
     expr* generated_axiom = analyze_function_call(call_info, e);
     if (generated_axiom == nullptr) {
+        expressions_with_no_axiom.insert(e_id, true);
+        XXX("No axiom generated for source:\n" << mk_pp(e, m) << "\n")
         return expr_ref(m);
     }
     expr_ref current_axiom = prepare_generated_axiom(generated_axiom);
-    
-    XXX("Generate axiom:\nSource: " << mk_pp(e, m) << "\nAxiom: " << current_axiom << "\n")
-
     call_axioms->insert(e, current_axiom.get(), nullptr);
+
+    XXX("Generate axiom:\nSource: " << mk_pp(e, m) << "\nAxiom: " << current_axiom << "\n")
+    XXX("All axioms:\n"; axiom_storage.display(tout) << "\n")
+
     return current_axiom;
 }
 
@@ -144,12 +150,14 @@ expr* function_call::function_call_context::analyze_function_call(expanded_call&
         UNREACHABLE();
         return nullptr;
     }
+    auto analyzer_call_id = analyzer_calls++;
+    XXX("CALL ANALYZER: " << analyzer_call_id << "\n")
     expr* result = m_function_call_analyzer->find_precondition(
             expression, call.id,
             call.in_args.c_ptr(), call.in_args.size(),
             call.out_args.c_ptr(), call.out_args.size()
     );
-
+    XXX("RETURN ANALYZER: " << analyzer_call_id << "\n")
     return result;
 }
 
@@ -226,6 +234,18 @@ function_call::call_axiom_storage::~call_axiom_storage() {
         expr_map* axiom_map = axioms[i];
         dealloc(axiom_map);
     }
+}
+
+std::ostream& function_call::call_axiom_storage::display(std::ostream& out) {
+    for (auto&& call: calls) {
+        out << "Call id: " << call.m_key << "\n";
+        auto&& call_axioms = axioms[call.m_value];
+        for (auto&& call_axiom: *call_axioms) {
+            out << "Source: " << mk_pp(call_axiom.m_key, m) << "\n";
+            out << "Axiom: " << mk_pp(call_axiom.m_value, m) << "\n";
+        }
+    }
+    return out;
 }
 
 expr_ref function_call::function_call_context::prepare_generated_axiom(expr* e) {

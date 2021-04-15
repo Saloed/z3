@@ -4,11 +4,10 @@
 
 #pragma once
 
-#include <unordered_set>
-#include <unordered_map>
+#include <ast/function_call_context.h>
 #include "smt/smt_theory.h"
 #include "ast/function_call_decl_plugin.h"
-#include "util/union_find.h"
+#include "util/map.h"
 #include "smt_clause.h"
 
 namespace smt {
@@ -16,22 +15,26 @@ namespace smt {
     public:
 
         expr_ref_vector known_calls;
-        unsigned m_num_pending_queries;
-        unsigned m_propagate_idx = 0;
-        std::unordered_set<unsigned > visited_expr;
-        std::unordered_set<justification *> visited_js;
+        u_map<bool> visited_expr;
+        uint64_t last_analysed_state_hash;
 
-        bool is_function_call(app const *n) const { return n->is_app_of(get_id(), OP_FUNCTION_CALL); }
+        void force_run_analysis() { last_analysed_state_hash = 0; }
 
-        bool is_function_call(expr const *n) const { return is_app(n) && is_function_call(to_app(n)); }
+        uint64_t state_hash() const;
 
-        bool is_function_call(enode const *n) const { return is_function_call(n->get_owner()); }
+        bool can_analyse() const { return last_analysed_state_hash != state_hash(); };
 
-        explicit theory_function_call(context &ctx);
+        void state_analysed() { last_analysed_state_hash = state_hash(); }
+
+        bool is_function_call(app const* n) const { return n->is_app_of(get_id(), OP_FUNCTION_CALL); }
+
+        bool is_function_call(expr const* n) const { return is_app(n) && is_function_call(to_app(n)); }
+
+        bool is_function_call(enode const* n) const { return is_function_call(n->get_owner()); }
+
+        explicit theory_function_call(context& ctx);
 
         ~theory_function_call() override = default;
-
-        void display_var(std::ostream &out, theory_var v) const;
 
         void display(std::ostream &out) const override;
 
@@ -65,15 +68,22 @@ namespace smt {
 
         bool build_models() const override;
 
-        theory_var mk_var(enode *n) override;
+        theory_var mk_var(enode* n) override;
 
-        model_value_proc *mk_value(enode *n, model_generator &mg) override;
+        model_value_proc* mk_value(enode* n, model_generator& mg) override;
 
         void mk_th_axiom(literal& lit);
 
-        ptr_vector<expr> least_logical_subexpr_containing_expr(expr *e, expr *target);
+        ptr_vector<expr> least_logical_subexpr_containing_expr(expr* e, expr* target);
 
         void analyze_all_exprs_via_axiom();
 
+        bool is_analysed(expr* e) const;
+
+        void mark_analysed(expr* e);
+
+        void expr_precondition_axiom(expr* e, function_call::expanded_call& call);
+
+        void analyse_expr_via_axiom(expr* e, function_call::expanded_call& call);
     };
 }
