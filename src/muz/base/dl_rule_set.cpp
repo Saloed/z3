@@ -485,14 +485,14 @@ namespace datalog {
         for (func_decl * f : m_output_preds) {
             out << "; output: " << f->get_name() << '\n';
         }
-        for (auto const& kv : m_head2rules) {
-            ptr_vector<rule> * rules = kv.m_value;
+        auto &&it = begin_grouped_rules();
+        auto &&end = end_grouped_rules();
+        for (; it != end; ++it) {
+            out << "Head: " << mk_pp(it->m_key, get_manager()) << "\n";
+            ptr_vector<rule>* rules = it->m_value;
             for (rule* r : *rules) {
-                if (!r->passes_output_thresholds(m_context)) {
-                    continue;
-                }
                 r->display(m_context, out);
-            }
+            }   
         }
     }
 

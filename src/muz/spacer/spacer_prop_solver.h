@@ -101,6 +101,8 @@ public:
         for (auto *f : fmls) assert_expr(f, level);
     }
 
+    std::ostream& display(std::ostream& out);
+
     /**
      * check assumptions with a background formula
      */

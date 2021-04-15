@@ -1734,6 +1734,7 @@ namespace smt {
         }
 
         void display(std::ostream & out) const;
+        void display_smt2(std::ostream & out) const;
 
         void display_unsat_core(std::ostream & out) const;
 

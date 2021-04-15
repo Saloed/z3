@@ -721,11 +721,38 @@ app_ref pred_transformer::mk_extend_lit() {
 std::ostream& pred_transformer::display(std::ostream& out) const
 {
     if (!rules().empty()) { out << "rules\n"; }
+    out << "####################################\n";
     datalog::rule_manager& rm = ctx.get_datalog_context().get_rule_manager();
     for (unsigned i = 0; i < rules().size(); ++i) {
         rm.display_smt2(*rules()[i], out) << "\n";
+        out << "*********************************\n";
     }
-    out << "transition\n" << mk_pp(transition(), m) << "\n";
+    out << "transition\n" << "####################################" << mk_pp(transition(), m) << "\n";
+    out << "PT Rules\n";
+    out << "####################################\n";
+    auto&& pt_rules_it = m_pt_rules.begin();
+    for (; pt_rules_it != m_pt_rules.end(); ++pt_rules_it) {
+        out << "\nRule:\n";
+        rm.display_smt2(pt_rules_it->get_key(), out);
+        out << "\nPT Rule:\n";
+        auto&& pt_rule = pt_rules_it->get_value();
+        out << "Is init: " << pt_rule->is_init() << "\n";
+        out << "Tag: " << mk_pp(pt_rule->tag(), m) << "\n";
+        out << "Rule:\n";
+        rm.display_smt2(pt_rule->rule(), out);
+        out << "\nTrans\n" << mk_pp(pt_rule->trans(), m) << "\n";
+        out << "Aux:\n";
+        auto&& aux = pt_rule->auxs();
+        for (auto&& ax: aux) {
+            out << mk_pp(ax, m) << "\n";
+        }
+        out << "*********************************\n";
+    }
+    return out;
+}
+
+std::ostream& pred_transformer::display_solver(std::ostream& out) const {
+    m_solver->display(out);
     return out;
 }
 
@@ -2370,6 +2397,12 @@ void context::reset()
     m_query = nullptr;
     m_last_result = l_undef;
     m_inductive_lvl = 0;
+}
+
+void display_solver_state(decl2rel& rels, ast_manager& m){
+    for (auto &entry : rels) {
+        XXX("Decl:\n" << mk_pp(entry.m_key, m) << "\nSolver:\n"; entry.m_value->display_solver(tout) << "\n")
+    }
 }
 
 void context::init_rules(datalog::rule_set& rules, decl2rel& rels)

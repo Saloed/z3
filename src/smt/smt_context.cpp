@@ -3394,6 +3394,7 @@ namespace smt {
        \brief Execute some finalization code after performing the search.
     */
     lbool context::check_finalize(lbool r) {
+        TRACE("after_search_smt2", display_smt2(tout << "result: " << r << "\n"););
         TRACE("after_search", display(tout << "result: " << r << "\n");
               m_case_split_queue->display(tout << "case splits\n");
               );

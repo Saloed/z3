@@ -55,6 +55,16 @@ std::ostream& solver::display(std::ostream & out, unsigned n, expr* const* assum
         mc->display(out);
         mc->set_env(nullptr);
     }
+    if (n == 0 && assumptions == nullptr) {
+        out << "\nAssumptions: " << get_num_assumptions() << "\n";
+        for (unsigned i = 0; i < get_num_assumptions(); i++) {
+            out << mk_pp(get_assumption(i), get_manager()) << "\n";
+        }
+        out << "Assertions: " << get_num_assertions() << "\n";
+        for (unsigned i = 0; i < get_num_assertions(); i++) {
+            out << mk_pp(get_assertion(i), get_manager()) << "\n";
+        }
+    }
     return out;
 }
 

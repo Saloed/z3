@@ -69,6 +69,22 @@ public:
 
     solver* base_solver() { return m_base.get(); }
 
+    std::ostream& display(std::ostream& out, unsigned int n, expr* const* assumptions) const override {
+        out << "Pool solver:\n";
+        out << "Is pushed: " << m_pushed << "\n";
+        if (!m_pushed) {
+            out << "Assertions:\n";
+            for (unsigned i = m_head, sz = m_assertions.size(); i < sz; ++i) {
+                expr_ref f(m);
+                f = m.mk_implies(m_pred, (m_assertions.get(i)));
+                out << f << "\n";
+            }
+        }
+        out << "Base solver:\n";
+        m_base->display(out, n, assumptions);
+        return out;
+    }
+    
     solver* translate(ast_manager& m, params_ref const& p) override { UNREACHABLE(); return nullptr; }
     void updt_params(params_ref const& p) override {
         solver::updt_params(p); m_base->updt_params(p);

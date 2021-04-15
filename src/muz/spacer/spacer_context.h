@@ -375,9 +375,9 @@ class pred_transformer {
             m_tags.insert(tag, p);
         }
 
-        bool empty() {return m_rules.empty();}
-        iterator begin() {return m_rules.begin();}
-        iterator end() {return m_rules.end();}
+        bool empty() const {return m_rules.empty();}
+        iterator begin() const {return m_rules.begin();}
+        iterator end() const {return m_rules.end();}
 
     };
 
@@ -471,6 +471,7 @@ public:
     expr_ref get_reachable();
 
     std::ostream& display(std::ostream& strm) const;
+    std::ostream& display_solver(std::ostream& strm) const;
 
     void collect_statistics(statistics& st) const;
     void reset_statistics();
