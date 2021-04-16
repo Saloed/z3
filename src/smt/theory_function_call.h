@@ -62,15 +62,7 @@ namespace smt {
 
         void propagate() override;
 
-        bool is_shared(theory_var v) const override;
-
-        bool internalize_term_core(app *n);
-
         bool build_models() const override;
-
-        theory_var mk_var(enode* n) override;
-
-        model_value_proc* mk_value(enode* n, model_generator& mg) override;
 
         void mk_th_axiom(literal& lit);
 

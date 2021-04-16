@@ -23,14 +23,16 @@ namespace smt {
         return internalize_term(atom);
     }
 
-    bool theory_function_call::internalize_term_core(app *n) {
+    bool theory_function_call::internalize_term(app *n) {
+        TRACE("xxx", tout << "Internalize: " << mk_pp(n, m) << "\n";);
+        if (ctx.e_internalized(n)) {
+            return true;
+        }
         unsigned num_args = n->get_num_args();
         for (unsigned i = 0; i < num_args; i++)
             ctx.internalize(n->get_arg(i), false);
-        if (ctx.e_internalized(n)) {
-            return false;
-        }
-        enode *e = ctx.mk_enode(n, false, false, true);
+
+        enode* e = ctx.mk_enode(n, false, false, true);
         if (!is_attached_to_var(e))
             mk_var(e);
 
@@ -41,31 +43,7 @@ namespace smt {
             ctx.set_var_theory(bv, get_id());
             ctx.set_enode_flag(bv, true);
         }
-        return true;
-    }
 
-    theory_var theory_function_call::mk_var(enode *n) {
-        theory_var r = theory::mk_var(n);
-        ctx.attach_th_var(n, this, r);
-        return r;
-    }
-
-    bool theory_function_call::internalize_term(app *n) {
-        TRACE("xxx", tout << "Internalize: " << mk_pp(n, m) << "\n";);
-        if (ctx.e_internalized(n)) {
-            return true;
-        }
-
-        if (!internalize_term_core(n)) {
-            return true;
-        }
-        enode *arg0 = ctx.get_enode(n->get_arg(0));
-        if (!is_attached_to_var(arg0))
-            mk_var(arg0);
-
-        theory_var v_arg = arg0->get_th_var(get_id());
-
-        SASSERT(v_arg != null_theory_var);
         return true;
     }
 
@@ -90,10 +68,6 @@ namespace smt {
     final_check_status theory_function_call::final_check_eh() {
         if (!can_analyse()) return FC_DONE;
         return FC_CONTINUE;
-    }
-
-    bool theory_function_call::is_shared(theory_var v) const {
-        return false;
     }
 
     bool theory_function_call::can_propagate() {
@@ -202,11 +176,6 @@ namespace smt {
             }
         }
         return result;
-    }
-
-    model_value_proc* theory_function_call::mk_value(enode* n, model_generator& mg) {
-        std::cout << "Model for: " << enode_pp(n, ctx) << std::endl;
-        return alloc(expr_wrapper_proc, n->get_expr());
     }
 
     expr_ref mk_implies_simplified(expr_ref& lhs, expr_ref& rhs) {
