@@ -138,7 +138,9 @@ set(Z3_JAVA_JAR_SOURCE_FILES
   FuncDecl.java
   FuncInterpDecRefQueue.java
   FuncInterpEntryDecRefQueue.java
+  FunctionCallAnalyzer.java
   FuncInterp.java
+  FunctionCallInfo.java
   Global.java
   GoalDecRefQueue.java
   Goal.java
@@ -186,6 +188,7 @@ set(Z3_JAVA_JAR_SOURCE_FILES
   Version.java
   Z3Exception.java
   Z3Object.java
+  NativeLibraryUtil.java
 )
 set(Z3_JAVA_JAR_SOURCE_FILES_FULL_PATH "")
 foreach (java_src_file ${Z3_JAVA_JAR_SOURCE_FILES})
@@ -225,7 +228,7 @@ add_custom_target(copy_generated_java_sources_enums
 
 add_dependencies(build_z3_java_bindings copy_generated_java_sources_native copy_generated_java_sources_enums)
 
-set(Z3_JAVA_LIBRARY_FULL_NAME "${Z3_JAVA_LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX}")
+set(Z3_JAVA_LIBRARY_FULL_NAME "${CMAKE_SHARED_LIBRARY_PREFIX}${Z3_JAVA_LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX}")
 set(Z3_JAVA_LIBRARY_FULL_NAME_ABSOLUTE "${PROJECT_SOURCE_DIR}/lib/${Z3_JAVA_LIBRARY_FULL_NAME}")
 file(RELATIVE_PATH Z3_JAVA_LIBRARY_FULL_NAME_RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" ${Z3_JAVA_LIBRARY_FULL_NAME_ABSOLUTE})
 add_custom_command(OUTPUT ${Z3_JAVA_LIBRARY_FULL_NAME_ABSOLUTE}
