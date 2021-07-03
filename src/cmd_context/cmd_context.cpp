@@ -31,6 +31,7 @@ Notes:
 #include "ast/pb_decl_plugin.h"
 #include "ast/fpa_decl_plugin.h"
 #include "ast/special_relations_decl_plugin.h"
+#include "ast/function_call_decl_plugin.h"
 #include "ast/ast_pp.h"
 #include "ast/rewriter/var_subst.h"
 #include "ast/pp.h"
@@ -676,6 +677,10 @@ bool cmd_context::logic_has_array() const {
     return !has_logic() || smt_logics::logic_has_array(m_logic);
 }
 
+bool cmd_context::logic_has_function_call() const {
+    return m_params.m_enable_function_call_support && !has_logic() || smt_logics::logic_has_function_call(m_logic);
+}
+
 bool cmd_context::logic_has_datatype() const {
     return !has_logic() || smt_logics::logic_has_datatype(m_logic);
 }
@@ -700,6 +705,9 @@ void cmd_context::init_manager_core(bool new_manager) {
         register_plugin(symbol("fpa"),      alloc(fpa_decl_plugin), logic_has_fpa());
         register_plugin(symbol("datalog_relation"), alloc(datalog::dl_decl_plugin), !has_logic());
         register_plugin(symbol("specrels"), alloc(special_relations_decl_plugin), !has_logic());
+        if (m_params.m_enable_function_call_support) {
+            register_plugin(symbol("function_call"), alloc(function_call_decl_plugin), logic_has_function_call());
+        }
     }
     else {
         // the manager was created by an external module

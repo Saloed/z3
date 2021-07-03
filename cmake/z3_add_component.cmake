@@ -196,6 +196,7 @@ macro(z3_add_component component_name)
   # build a static or dynamic library from the object libraries
   # on all platforms. Is this added flexibility worth the linking
   # overhead it adds?
+  add_custom_target("generate_everything_for_${component_name}" ALL DEPENDS  ${_list_generated_headers})
   add_library(${component_name} OBJECT ${Z3_MOD_SOURCES} ${_list_generated_headers})
   unset(_list_generated_headers)
   # Add definitions

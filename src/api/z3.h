@@ -33,4 +33,5 @@ Notes:
 #include "z3_optimization.h"
 #include "z3_fpa.h"
 #include "z3_spacer.h"
+#include "z3_function_call.h"
 

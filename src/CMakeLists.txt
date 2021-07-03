@@ -14,6 +14,7 @@ set(Z3_API_HEADER_FILES_TO_SCAN
   z3_optimization.h
   z3_fpa.h
   z3_spacer.h
+  z3_function_call.h
 )
 set(Z3_FULL_PATH_API_HEADER_FILES_TO_SCAN "")
 foreach (header_file ${Z3_API_HEADER_FILES_TO_SCAN})
@@ -167,6 +168,7 @@ set (libz3_public_headers
   z3_rcf.h
   z3_v1.h
   z3_spacer.h
+  z3_function_call.h
 )
 foreach (header ${libz3_public_headers})
   set_property(TARGET libz3 APPEND PROPERTY
@@ -264,12 +266,12 @@ endif()
 ################################################################################
 # Java bindings
 ################################################################################
-option(Z3_BUILD_JAVA_BINDINGS "Build Java bindings for Z3" OFF)
+option(Z3_BUILD_JAVA_BINDINGS "Build Java bindings for Z3" ON)
 if (Z3_BUILD_JAVA_BINDINGS)
-  if (NOT Z3_BUILD_LIBZ3_SHARED)
-    message(FATAL_ERROR "The Java bindings will not work with a static libz3. "
-      "You either need to disable Z3_BUILD_JAVA_BINDINGS or enable Z3_BUILD_LIBZ3_SHARED")
-  endif()
+#  if (NOT Z3_BUILD_LIBZ3_SHARED)
+#    message(FATAL_ERROR "The Java bindings will not work with a static libz3. "
+#      "You either need to disable Z3_BUILD_JAVA_BINDINGS or enable Z3_BUILD_LIBZ3_SHARED")
+#  endif()
   add_subdirectory(api/java)
 endif()
 

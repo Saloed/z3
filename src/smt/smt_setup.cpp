@@ -37,6 +37,7 @@ Revision History:
 #include "smt/theory_pb.h"
 #include "smt/theory_fpa.h"
 #include "smt/theory_str.h"
+#include "theory_function_call.h"
 
 namespace smt {
 
@@ -569,6 +570,7 @@ namespace smt {
         m_params.m_nnf_cnf             = false;
         m_context.register_plugin(alloc(smt::theory_bv, m_context));
         setup_arrays();
+        setup_function_calls();
     }
 
     void setup::setup_QF_AX() {
@@ -576,6 +578,7 @@ namespace smt {
         m_params.m_array_mode          = AR_SIMPLE;
         m_params.m_nnf_cnf             = false;
         setup_arrays();
+        setup_function_calls();
     }
 
     void setup::setup_QF_AX(static_features const & st) {
@@ -589,6 +592,7 @@ namespace smt {
             m_params.m_relevancy_lvl       = 2;
         }
         setup_arrays();
+        setup_function_calls();
     }
 
     void setup::setup_QF_AUFLIA() {
@@ -601,6 +605,7 @@ namespace smt {
         m_params.m_phase_selection     = PS_CACHING_CONSERVATIVE2;
         setup_i_arith();
         setup_arrays();
+        setup_function_calls();
     }
 
     void setup::setup_QF_AUFLIA(static_features const & st) {
@@ -622,6 +627,7 @@ namespace smt {
         }
         setup_i_arith();
         setup_arrays();
+        setup_function_calls();
     }
 
     void setup::setup_AUFLIA(bool simple_array) {
@@ -645,6 +651,7 @@ namespace smt {
         TRACE("setup", tout << "max_eager_multipatterns: " << m_params.m_qi_max_eager_multipatterns << "\n";);
         m_context.register_plugin(alloc(smt::theory_i_arith, m_context));
         setup_arrays();
+        setup_function_calls();
     }
 
     void setup::setup_AUFLIA(static_features const & st) {
@@ -675,6 +682,7 @@ namespace smt {
         // 
         setup_mi_arith();
         setup_arrays(); 
+        setup_function_calls();
     }
 
     void setup::setup_UFNIA() {
@@ -869,6 +877,12 @@ namespace smt {
         }
     }
 
+    void setup::setup_function_calls() {
+        if (!m_context.m.enabled_function_call_support()) return;
+        TRACE("setup", tout << "registering function calls\n"; );
+        m_context.register_plugin(alloc(smt::theory_function_call, m_context));
+    }
+
     void setup::setup_datatypes() {
         TRACE("datatype", tout << "registering theory datatype...\n";);
         m_context.register_plugin(alloc(theory_datatype, m_context));
@@ -941,6 +955,7 @@ namespace smt {
         TRACE("setup", tout << "setup_unknown\n";);
         setup_arith();
         setup_arrays();
+        setup_function_calls();
         setup_bv();
         setup_datatypes();
         setup_recfuns();

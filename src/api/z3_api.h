@@ -1003,6 +1003,8 @@ typedef enum
         function declaration to obtain more information.
 
       - Z3_OP_UNINTERPRETED: kind used for uninterpreted symbols.
+      
+      - Z3_OP_FUNCTION_CALL: function call operation. 
 */
 typedef enum {
     // Basic
@@ -1306,7 +1308,9 @@ typedef enum {
 
     Z3_OP_INTERNAL,
 
-    Z3_OP_UNINTERPRETED
+    Z3_OP_UNINTERPRETED,
+    
+    Z3_OP_FUNCTION_CALL
 } Z3_decl_kind;
 
 /**

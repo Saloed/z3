@@ -316,6 +316,68 @@ namespace smt {
         }
     }
 
+    void context::display_smt2(std::ostream& out) const {
+        get_pp_visited().reset();
+        out << "Logical context:\n";
+        out << "scope-lvl: " << m_scope_lvl << "\n";
+        out << "base-lvl:  " << m_base_lvl  << "\n";
+        out << "search-lvl:  " << m_search_lvl  << "\n";
+        out << "inconsistent(): " << inconsistent() << "\n";
+        out << "m_asserted_formulas.inconsistent(): " << m_asserted_formulas.inconsistent() << "\n";
+        {
+            out << "Bool vars exprs:\n";
+            unsigned num = get_num_bool_vars();
+            for (unsigned v = 0; v < num; v++) {
+                expr* n = m_bool_var2expr[v];
+                out << v << ": " << mk_pp(n, m) << "\n";
+            }
+        }
+        {
+            out << "Enodes:\n";
+            for (enode* x : m_enodes) {
+                expr* n = x->get_owner();
+                out << mk_pp(n, m) << "\n";
+            }
+        }
+        m_asserted_formulas.display(out << "Asserted formulas:\n");
+        {
+            out << "Binary clauses:\n";
+            unsigned s = m_watches.size();
+            for (unsigned l_idx = 0; l_idx < s; l_idx++) {
+                literal l = to_literal(l_idx);
+                display_literal_smt2(out, l);
+                out << " watch_list:\n";
+                watch_list& wl = const_cast<watch_list&>(m_watches[l.index()]);
+                watch_list::clause_iterator it = wl.begin_clause();
+                watch_list::clause_iterator end = wl.end_clause();
+                for (; it != end; ++it) {
+                    (*it)->display_smt2(out, m, m_bool_var2expr.c_ptr());
+                    out << "\n";
+                }
+                out << "\n";
+            }
+        }
+        if (!m_aux_clauses.empty()) {
+            out << "Auxiliary clauses:\n";
+            for (auto&& cls: m_aux_clauses) {
+                display_clause_smt2(out, *cls);
+                out << "\n";
+            }
+        }
+        if (!m_lemmas.empty()) {
+            out << "Lemmas:\n";
+            for (auto&& cls: m_lemmas) {
+                display_clause_smt2(out, *cls);
+                out << "\n";
+            }
+        }
+        if (!m_assigned_literals.empty()) {
+            out << "Current assignment:\n";
+            display_assignment_as_smtlib2(out);
+            out << "\n";
+        }
+    }
+    
     void context::display(std::ostream & out) const {
         get_pp_visited().reset();
         out << "Logical context:\n";

@@ -36,6 +36,7 @@ Revision History:
 #include "muz/transforms/dl_mk_array_eq_rewrite.h"
 #include "muz/transforms/dl_mk_array_instantiation.h"
 #include "muz/transforms/dl_mk_elim_term_ite.h"
+#include "muz/transforms/dl_mk_function_call_normalize.h"
 #include "muz/base/fp_params.hpp"
 
 namespace datalog {
@@ -98,6 +99,10 @@ namespace datalog {
         }
 
         transf.register_plugin(alloc(datalog::mk_elim_term_ite, ctx, 35010));
+        
+        if (ctx.get_manager().enabled_function_call_support()){
+            transf.register_plugin(alloc(datalog::mk_function_call_normalize, ctx, 25000));
+        }
         ctx.transform_rules(transf);
     }
 }

@@ -414,7 +414,21 @@ void prop_solver::reset_statistics()
 {
 }
 
-
+std::ostream& prop_solver::display(std::ostream& out) {
+    std::stringstream out_ss_0, out_ss_1;
+    m_contexts[0]->display(out_ss_0, 0, nullptr);
+    m_contexts[1]->display(out_ss_1, 0, nullptr);
+    auto&& out_s_0 = out_ss_0.str();
+    auto&& out_s_1 = out_ss_1.str();
+    out << "Solver 0\n" << out_s_0;
+    out << "Solver 1\n";
+    if (out_s_0 == out_s_1) {
+        out << "Same as solver 0\n";
+    } else {
+        out << out_s_1;
+    }
+    return out;
+}
 
 
 }

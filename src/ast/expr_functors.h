@@ -101,6 +101,43 @@ public:
 };
 
 /**
+   \brief Determine if expression 'e' or vector of expressions 'v' contains the expr x
+*/
+
+class contains_expr {
+    class pred : public i_expr_pred {
+        expr *m_x;
+    public:
+        pred(expr *x) : m_x(x) {}
+
+        bool operator()(expr *e) override {
+            return m_x == e;
+        }
+    };
+
+    expr_ref m_x;
+    pred m_pred;
+    check_pred m_check;
+
+public:
+    contains_expr(ast_manager &m, expr *x) :
+            m_x(x, m), m_pred(x), m_check(m_pred, m) {}
+
+    bool operator()(expr *e) {
+        return m_check(e);
+    }
+
+    bool operator()(expr_ref_vector const &v) {
+        return (*this)(v.size(), v.c_ptr());
+    }
+
+    bool operator()(unsigned size, expr *const *es);
+
+    expr *x() const { return m_x; }
+
+};
+
+/**
    \brief Base class of functor that applies map to expressions.
 */
 class map_proc {

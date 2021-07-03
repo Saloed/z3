@@ -42,6 +42,7 @@ Revision History:
 #include "api/z3.h"
 #include "api/api_util.h"
 #include "api/api_polynomial.h"
+#include "api/api_context_function_call.h"
 
 namespace smtlib {
     class parser;
@@ -52,7 +53,9 @@ namespace realclosure {
 };
 
 namespace api {
-       
+
+    class function_call_analyzer;
+
     class seq_expr_solver : public expr_solver {
         ast_manager& m;
         params_ref const& p;
@@ -109,6 +112,7 @@ namespace api {
         family_id                  m_fpa_fid;
         family_id                  m_seq_fid;
         family_id                  m_special_relations_fid;
+        family_id                  m_function_call_fid;
         datatype_decl_plugin *     m_dt_plugin;
         
         std::string                m_string_buffer; // temporary buffer used to cache strings sent to the "external" world.
@@ -164,8 +168,15 @@ namespace api {
         family_id get_pb_fid() const { return m_pb_fid; }
         family_id get_fpa_fid() const { return m_fpa_fid; }
         family_id get_seq_fid() const { return m_seq_fid; }
+        family_id get_function_call_fid() const { return m_function_call_fid; }
         datatype_decl_plugin * get_dt_plugin() const { return m_dt_plugin; }
         family_id get_special_relations_fid() const { return m_special_relations_fid; }
+        bool function_calls_enabled() const { return m_params.m_enable_function_call_support; }
+
+        bool update_call_analyzer(function_call_analyzer_backend* analyzer);
+        void update_function_call_info(unsigned int num_functions, const unsigned int function_ids[],
+                                       const unsigned int function_number_in_args[],
+                                       const unsigned int function_number_out_args[]);
 
         Z3_error_code get_error_code() const { return m_error_code; }
         void reset_error_code() { m_error_code = Z3_OK; }
@@ -227,6 +238,7 @@ namespace api {
         // Polynomial manager & caches
         //
         // -----------------------
+        api::function_call_analyzer*      m_function_call_analyzer;
     private:
         reslimit                   m_limit;
         pmanager                   m_pmanager;
@@ -251,7 +263,8 @@ namespace api {
         //
         // ------------------------
         smt_params & fparams() { return m_fparams; }
-        
+
+        app *mk_function_call(unsigned int function_id, unsigned int num_args, expr **args);
     };
     
 };

@@ -21,6 +21,9 @@ import static com.microsoft.z3.Constructor.of;
 
 import com.microsoft.z3.enumerations.Z3_ast_print_mode;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -35,6 +38,14 @@ import java.util.Map;
 public class Context implements AutoCloseable {
     private long m_ctx;
     static final Object creation_lock = new Object();
+    private static final Map<Long, Context> contextCache = new HashMap<>();
+
+    protected static Context create(long m_ctx) {
+        if (contextCache.containsKey(m_ctx)) {
+            return contextCache.get(m_ctx);
+        }
+        return new Context(m_ctx);
+    }
 
     public Context () {
         synchronized (creation_lock) {
@@ -65,6 +76,7 @@ public class Context implements AutoCloseable {
      *     - model                      model generation for solvers, this parameter can be overwritten when creating a solver
      *     - model_validate             validate models produced by solvers
      *     - unsat_core                 unsat-core generation for solvers, this parameter can be overwritten when creating a solver
+     *     - enable_function_call_support Enable support for function calls
      * Note that in previous versions of Z3, this constructor was also used to set global and
      * module parameters. For this purpose we should now use {@code Global.setParameter}
      **/
@@ -83,6 +95,7 @@ public class Context implements AutoCloseable {
     private void init() {
         setPrintMode(Z3_ast_print_mode.Z3_PRINT_SMTLIB2_COMPLIANT);
         Native.setInternalErrorHandler(m_ctx);
+        contextCache.put(m_ctx, this);
     }
 
     /**
@@ -4115,6 +4128,39 @@ public class Context implements AutoCloseable {
         return m_Optimize_DRQ;
     }
 
+    private final List<FunctionCallAnalyzer> registeredFunctionCallAnalyzers = new ArrayList<>();
+
+    public void registerFunctionCallAnalyzer(final FunctionCallAnalyzer analyzer) {
+        final int analyzerId = registeredFunctionCallAnalyzers.size();
+        registeredFunctionCallAnalyzers.add(analyzer);
+        Native.registerFunctionCallAnalyzer(nCtx(), analyzerId);
+    }
+
+    public Expr runFunctionCallAnalyzer(int analyzerId, int functionId, Expr expression, Expr[] inArgs, Expr[] outArgs){
+        final FunctionCallAnalyzer analyzer = registeredFunctionCallAnalyzers.get(analyzerId);
+        return analyzer.analyze(functionId, expression, inArgs, outArgs);
+    }
+
+    public void provideFunctionCallInfo(final FunctionCallInfo[] callInfo) {
+        int[] ids = new int[callInfo.length];
+        int[] numInArgs = new int[callInfo.length];
+        int[] numOutArgs = new int[callInfo.length];
+        for (int i = 0; i < callInfo.length; i++) {
+            FunctionCallInfo info = callInfo[i];
+            ids[i] = info.getId();
+            numInArgs[i] = info.getNumInArgs();
+            numOutArgs[i] = info.getNumOutArgs();
+        }
+        Native.provideFunctionCallInfo(nCtx(), ids.length, ids, numInArgs, numOutArgs);
+    }
+
+    public Expr mkFunctionCall(int functionId, Expr[] args) {
+        checkContextMatch(args);
+        long obj = Native.mkFunctionCall(nCtx(), functionId, Z3Object.arrayLength(args), Z3Object.arrayToNative(args));
+        return Expr.create(this, obj);
+    }
+
+
     /**
      * Disposes of the context.
      **/
@@ -4144,6 +4190,7 @@ public class Context implements AutoCloseable {
 
         synchronized (creation_lock) {
             Native.delContext(m_ctx);
+            contextCache.remove(m_ctx);
         }
         m_ctx = 0;
     }

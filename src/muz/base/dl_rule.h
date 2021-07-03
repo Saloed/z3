@@ -317,9 +317,9 @@ namespace datalog {
 
         void deallocate(ast_manager & m);
 
-        void get_used_vars(used_vars& uv) const;
-        
     public:
+        
+        void get_used_vars(used_vars& uv) const;
 
         proof * get_proof() const { return m_proof; }
 

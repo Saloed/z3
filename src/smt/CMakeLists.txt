@@ -78,6 +78,7 @@ z3_add_component(smt
     theory_str_regex.cpp
     theory_utvpi.cpp
     theory_wmaxsat.cpp
+    theory_function_call.cpp
     user_propagator.cpp
     uses_theory.cpp
     watch_list.cpp

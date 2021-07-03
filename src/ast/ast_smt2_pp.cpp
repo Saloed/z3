@@ -30,6 +30,7 @@ using namespace format_ns;
 #define ALIAS_PREFIX "a"
 #define MAX_INDENT   16
 #define SMALL_INDENT 2
+#define USE_ALIAS false
 
 std::string ensure_quote(symbol const& s) {
     std::string str;
@@ -1044,7 +1045,7 @@ class smt2_printer {
         SASSERT(&(r.get_manager()) == &(fm()));
         m_soccs(n);
         m_root = n;
-        push_frame(n, true);
+        push_frame(n, USE_ALIAS);
         while (!m_frame_stack.empty()) {
             frame & fr = m_frame_stack.back();
             switch (fr.m_curr->get_kind()) {

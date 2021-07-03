@@ -375,9 +375,9 @@ class pred_transformer {
             m_tags.insert(tag, p);
         }
 
-        bool empty() {return m_rules.empty();}
-        iterator begin() {return m_rules.begin();}
-        iterator end() {return m_rules.end();}
+        bool empty() const {return m_rules.empty();}
+        iterator begin() const {return m_rules.begin();}
+        iterator end() const {return m_rules.end();}
 
     };
 
@@ -471,6 +471,7 @@ public:
     expr_ref get_reachable();
 
     std::ostream& display(std::ostream& strm) const;
+    std::ostream& display_solver(std::ostream& strm) const;
 
     void collect_statistics(statistics& st) const;
     void reset_statistics();
@@ -767,6 +768,8 @@ class derivation {
         /// The new summary is over n-variables.
         void set_summary(expr * summary, bool must,
                          const ptr_vector<app> *aux_vars = nullptr);
+
+        std::ostream& display(std::ostream& out) const;
     };
 
 
@@ -810,8 +813,20 @@ public:
     manager &get_manager () const {return m_parent.get_manager ();}
     context &get_context() const {return m_parent.get_context();}
     pred_transformer &pt() const {return m_parent.pt();}
+    std::ostream& display (std::ostream& out) const;
 };
 
+
+class iterable_pob_priority_queue : public std::priority_queue<pob *, std::vector<pob *>, pob_gt_proc> {
+public:
+    std::vector<pob *>::const_iterator cbegin() {
+        return c.cbegin();
+    }
+
+    std::vector<pob *>::const_iterator cend() {
+        return c.cend();
+    }
+};
 
 class pob_queue {
 
@@ -820,7 +835,7 @@ class pob_queue {
     unsigned m_max_level;
     unsigned m_min_depth;
 
-    pob_queue_ty  m_data;
+    iterable_pob_priority_queue  m_data;
 
 public:
     pob_queue(): m_root(nullptr), m_max_level(0), m_min_depth(0) {}
@@ -849,6 +864,14 @@ public:
     unsigned max_level() const {return m_max_level;}
     unsigned min_depth() const {return m_min_depth;}
     size_t size() const {return m_data.size();}
+
+    std::vector<pob *>::const_iterator cbegin() {
+        return m_data.cbegin();
+    }
+
+    std::vector<pob *>::const_iterator cend() {
+        return m_data.cend();
+    }
 };
 
 

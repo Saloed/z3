@@ -26,6 +26,8 @@ Revision History:
 #include "api/api_util.h"
 #include "ast/reg_decl_plugins.h"
 #include "math/realclosure/realclosure.h"
+#include "ast/function_call_context.h"
+#include "api_context_function_call.h"
 
 
 // The install_tactics procedure is automatically generated
@@ -83,7 +85,8 @@ namespace api {
         m_recfun(m()),
         m_last_result(m()),
         m_ast_trail(m()),
-        m_pmanager(m_limit) {
+        m_pmanager(m_limit),
+        m_function_call_analyzer(nullptr){
 
         m_error_code = Z3_OK;
         m_print_mode = Z3_PRINT_SMTLIB_FULL;
@@ -103,6 +106,7 @@ namespace api {
         m_fpa_fid   = m().mk_family_id("fpa");
         m_seq_fid   = m().mk_family_id("seq");
         m_special_relations_fid   = m().mk_family_id("specrels");
+        m_function_call_fid = function_calls_enabled() ? m().mk_family_id("function_call") : null_family_id;
         m_dt_plugin = static_cast<datatype_decl_plugin*>(m().get_plugin(m_dt_fid));
     
         install_tactics(*this);
@@ -118,6 +122,9 @@ namespace api {
         }
         if (m_params.owns_manager())
             m_manager.detach();
+        if (m_function_call_analyzer != nullptr) {
+            dealloc(m_function_call_analyzer);
+        }
     }
 
     context::set_interruptable::set_interruptable(context & ctx, event_handler & i):

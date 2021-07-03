@@ -63,6 +63,10 @@ Revision History:
 class ast;
 class ast_manager;
 
+namespace function_call {
+    class function_call_context;
+}
+
 /**
    \brief Generic exception for AST related errors.
 
@@ -1546,11 +1550,14 @@ protected:
     u_map<unsigned>           m_debug_free_indices;
     std::fstream*             m_trace_stream;
     bool                      m_trace_stream_owner;
+    bool                      m_enable_function_call_support;
 #ifdef Z3DEBUG
     bool slow_not_contains(ast const * n);
 #endif
     ast_manager *             m_format_manager; // hack for isolating format objects in a different manager.
     symbol                    m_lambda_def;
+
+    function_call::function_call_context* m_function_call_context;
 
     void init();
 
@@ -1647,6 +1654,10 @@ public:
     family_id get_user_sort_family_id() const { return m_user_sort_family_id; }
 
     user_sort_plugin * get_user_sort_plugin() const { return static_cast<user_sort_plugin*>(get_plugin(m_user_sort_family_id)); }
+
+    void enable_function_call_support();
+    bool enabled_function_call_support() { return m_enable_function_call_support; }
+    function_call::function_call_context *get_function_call_context() const { return m_function_call_context; }
 
     /**
        \brief Debugging support method: set the next expression identifier to be the least value id' s.t.
@@ -2208,6 +2219,7 @@ public:
     app * mk_or(ref_buffer<expr, ast_manager> const& args) { return mk_or(args.size(), args.c_ptr()); }
     app * mk_or(ptr_buffer<expr> const& args) { return mk_or(args.size(), args.c_ptr()); }
     app * mk_implies(expr * arg1, expr * arg2) { return mk_app(m_basic_family_id, OP_IMPLIES, arg1, arg2); }
+    app * mk_implies_simplified(expr * arg1, expr * arg2) { return mk_or(mk_not(arg1), arg2); }
     app * mk_not(expr * n) { return mk_app(m_basic_family_id, OP_NOT, n); }
     app * mk_distinct(unsigned num_args, expr * const * args);
     app * mk_distinct_expanded(unsigned num_args, expr * const * args);

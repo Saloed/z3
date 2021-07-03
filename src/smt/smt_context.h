@@ -75,8 +75,7 @@ namespace smt {
         void set_reason_unknown(char const* msg) { m_unknown = msg; }
         void set_progress_callback(progress_callback *callback);
 
-
-    protected:
+    public:
         ast_manager &               m;
         smt_params &                m_fparams;
         params_ref                  m_params;
@@ -1449,7 +1448,7 @@ namespace smt {
         // Debugging support
         //
         // -----------------------------------
-    protected:
+    public:
 #ifdef Z3DEBUG
         bool is_watching_clause(literal l, clause const * cls) const;
 
@@ -1735,6 +1734,7 @@ namespace smt {
         }
 
         void display(std::ostream & out) const;
+        void display_smt2(std::ostream & out) const;
 
         void display_unsat_core(std::ostream & out) const;
 

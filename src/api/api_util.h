@@ -54,7 +54,7 @@ inline expr * to_expr(Z3_ast a) { return reinterpret_cast<expr*>(a); }
 inline Z3_ast of_expr(expr* e) { return reinterpret_cast<Z3_ast>(e); }
 
 inline expr * const * to_exprs(unsigned n, Z3_ast const* a) { return reinterpret_cast<expr* const*>(a); }
-inline Z3_ast * const * of_exprs(expr* const* e) { return reinterpret_cast<Z3_ast* const*>(e); }
+inline Z3_ast const * of_exprs(expr* const* e) { return reinterpret_cast<Z3_ast const*>(e); }
 
 inline app * to_app(Z3_app a) { return reinterpret_cast<app*>(a); }
 inline app * to_app(Z3_ast a) { return reinterpret_cast<app*>(a); }

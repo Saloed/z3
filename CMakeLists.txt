@@ -259,6 +259,18 @@ else()
   message(STATUS "Not using libgmp")
 endif()
 
+########################################
+# Boost fore debug purposes
+#######################################
+option(Z3_ENABLE_BOOST "Include boost dependency" OFF)
+if (Z3_ENABLE_BOOST)
+  find_package(Boost REQUIRED)
+  message(STATUS "Using boost")
+  include_directories(${Boost_INCLUDE_DIRS})
+  list(APPEND Z3_DEPENDENT_LIBS ${Boost_LIBRARIES})
+else ()
+  message(STATUS "Not using boost")
+endif ()
 
 ################################################################################
 # API Log sync
@@ -353,7 +365,7 @@ endif()
 ################################################################################
 # Option to control what type of library we build
 ################################################################################
-option(Z3_BUILD_LIBZ3_SHARED "Build libz3 as a shared library if true, otherwise build a static library" ON)
+option(Z3_BUILD_LIBZ3_SHARED "Build libz3 as a shared library if true, otherwise build a static library" OFF)
 
 
 ################################################################################

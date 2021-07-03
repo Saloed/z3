@@ -109,6 +109,21 @@ bool contains_app::operator()(unsigned size, expr* const* es) {
     return false;
 }
 
+
+// ------------
+// contains_expr
+
+
+bool contains_expr::operator()(unsigned size, expr *const *es) {
+    for (unsigned i = 0; i < size; ++i) {
+        if ((*this)(es[i])) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
 // -----------
 // map_proc
 

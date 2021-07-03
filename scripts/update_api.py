@@ -526,7 +526,23 @@ def java_array_element_type(p):
     else:
         return 'jlong'
 
-def mk_java(java_dir, package_name):
+
+def mk_java_special_internal(source_dir, _java, name, result, params):
+    with open(os.path.join(source_dir, name, 'internal.java')) as f:
+        _java.write(f.read())
+
+
+def mk_java_special_wrapper(source_dir, _java, name, result, params):
+    with open(os.path.join(source_dir, name, 'wrapper.java')) as f:
+        _java.write(f.read())
+
+
+def mk_java_special_native(source_dir, _java, name, result, params, pkg_str):
+    with open(os.path.join(source_dir, name, 'native.cpp')) as f:
+        _java.write(f.read() % pkg_str)
+
+
+def mk_java(java_dir, package_name, java_special_native_dir, java_native_library_name):
     java_nativef  = os.path.join(java_dir, 'Native.java')
     java_wrapperf = os.path.join(java_dir, 'Native.cpp')
     java_native   = open(java_nativef, 'w')
@@ -543,16 +559,16 @@ def mk_java(java_dir, package_name):
 
     java_native.write('  static {\n')
     java_native.write('    if (null == System.getProperty("z3.skipLibraryLoad")) {\n')
-    java_native.write('      try {\n')
-    java_native.write('        System.loadLibrary("z3java");\n')
-    java_native.write('      } catch (UnsatisfiedLinkError ex) {\n')
-    java_native.write('        System.loadLibrary("libz3java");\n')
-    java_native.write('      }\n')
+    java_native.write('      NativeLibraryUtil.loadLibrary("{}");\n'.format(java_native_library_name))
     java_native.write('    }\n')
     java_native.write('  }\n')
 
     java_native.write('\n')
+
     for name, result, params in _dotnet_decls:
+        if name in SPECIAL_NATIVE_API:
+            mk_java_special_internal(java_special_native_dir, java_native, name, result, params)
+            continue
         java_native.write('  protected static native %s INTERNAL%s(' % (type2java(result), java_method_name(name)))
         first = True
         i = 0
@@ -564,9 +580,13 @@ def mk_java(java_dir, package_name):
             java_native.write('%s a%d' % (param2java(param), i))
             i = i + 1
         java_native.write(');\n')
+
     java_native.write('\n\n')
     # Exception wrappers
     for name, result, params in _dotnet_decls:
+        if name in SPECIAL_NATIVE_API:
+            mk_java_special_wrapper(java_special_native_dir, java_native, name, result, params)
+            continue
         java_native.write('  public static %s %s(' % (type2java(result), java_method_name(name)))
         first = True
         i = 0
@@ -615,6 +635,7 @@ def mk_java(java_dir, package_name):
     java_wrapper.write('#include<jni.h>\n')
     java_wrapper.write('#include<stdlib.h>\n')
     java_wrapper.write('#include"z3.h"\n')
+    java_wrapper.write('#include "java/function_call_analyzer_backend_java.h"\n')
     java_wrapper.write('#ifdef __cplusplus\n')
     java_wrapper.write('extern "C" {\n')
     java_wrapper.write('#endif\n\n')
@@ -671,7 +692,11 @@ def mk_java(java_dir, package_name):
     java_wrapper.write('}\n\n')
     java_wrapper.write('')
     for name, result, params in _dotnet_decls:
-        java_wrapper.write('DLL_VIS JNIEXPORT %s JNICALL Java_%s_Native_INTERNAL%s(JNIEnv * jenv, jclass cls' % (type2javaw(result), pkg_str, java_method_name(name)))
+        if name in SPECIAL_NATIVE_API:
+            mk_java_special_native(java_special_native_dir, java_wrapper, name, result, params, pkg_str)
+            continue
+        java_wrapper.write('DLL_VIS JNIEXPORT %s JNICALL Java_%s_Native_INTERNAL%s(JNIEnv * jenv, jclass cls' % (
+            type2javaw(result), pkg_str, java_method_name(name)))
         i = 0
         for param in params:
             java_wrapper.write(', ')
@@ -686,19 +711,23 @@ def mk_java(java_dir, package_name):
                 java_wrapper.write('  %s _a%s;\n' % (type2str(param_type(param)), i))
             elif k == IN_ARRAY or k == INOUT_ARRAY:
                 if param_type(param) == INT or param_type(param) == UINT or param_type(param) == BOOL:
-                    java_wrapper.write('  %s * _a%s = (%s*) jenv->GetIntArrayElements(a%s, NULL);\n' % (type2str(param_type(param)), i, type2str(param_type(param)), i))
+                    java_wrapper.write('  %s * _a%s = (%s*) jenv->GetIntArrayElements(a%s, NULL);\n' % (
+                        type2str(param_type(param)), i, type2str(param_type(param)), i))
                 else:
                     java_wrapper.write('  GETLONGAELEMS(%s, a%s, _a%s);\n' % (type2str(param_type(param)), i, i))
             elif k == OUT_ARRAY:
-                java_wrapper.write('  %s * _a%s = (%s *) malloc(((unsigned)a%s) * sizeof(%s));\n' % (type2str(param_type(param)),
-                                                                                                     i,
-                                                                                                     type2str(param_type(param)),
-                                                                                                     param_array_capacity_pos(param),
-                                                                                                     type2str(param_type(param))))
+                java_wrapper.write(
+                    '  %s * _a%s = (%s *) malloc(((unsigned)a%s) * sizeof(%s));\n' % (type2str(param_type(param)),
+                                                                                      i,
+                                                                                      type2str(param_type(param)),
+                                                                                      param_array_capacity_pos(param),
+                                                                                      type2str(param_type(param))))
                 if param_type(param) == INT or param_type(param) == UINT or param_type(param) == BOOL:
-                    java_wrapper.write('  jenv->GetIntArrayRegion(a%s, 0, (jsize)a%s, (jint*)_a%s);\n' % (i, param_array_capacity_pos(param), i))
+                    java_wrapper.write('  jenv->GetIntArrayRegion(a%s, 0, (jsize)a%s, (jint*)_a%s);\n' % (
+                        i, param_array_capacity_pos(param), i))
                 else:
-                    java_wrapper.write('  GETLONGAREGION(%s, a%s, 0, a%s, _a%s);\n' % (type2str(param_type(param)), i, param_array_capacity_pos(param), i))
+                    java_wrapper.write('  GETLONGAREGION(%s, a%s, 0, a%s, _a%s);\n' % (
+                        type2str(param_type(param)), i, param_array_capacity_pos(param), i))
             elif k == IN and param_type(param) == STRING:
                 java_wrapper.write('  Z3_string _a%s = (Z3_string) jenv->GetStringUTFChars(a%s, NULL);\n' % (i, i))
             elif k == OUT_MANAGED_ARRAY:
@@ -735,7 +764,8 @@ def mk_java(java_dir, package_name):
             k = param_kind(param)
             if k == OUT_ARRAY:
                 if param_type(param) == INT or param_type(param) == UINT or param_type(param) == BOOL:
-                    java_wrapper.write('  jenv->SetIntArrayRegion(a%s, 0, (jsize)a%s, (jint*)_a%s);\n' % (i, param_array_capacity_pos(param), i))
+                    java_wrapper.write('  jenv->SetIntArrayRegion(a%s, 0, (jsize)a%s, (jint*)_a%s);\n' % (
+                        i, param_array_capacity_pos(param), i))
                 else:
                     java_wrapper.write('  SETLONGAREGION(a%s, 0, a%s, _a%s);\n' % (i, param_array_capacity_pos(param), i))
                 java_wrapper.write('  free(_a%s);\n' % i)
@@ -806,7 +836,7 @@ def mk_js(js_output_dir):
            ous.write("    {\n")
            ous.write("       \"name\": \"%s\",\n" % name)
            ous.write("       \"c_type\": \"%s\",\n" % Type2Str[result])
-           ous.write("       \"napi_type\": \"%s\",\n" % type2napi(result))                       
+           ous.write("       \"napi_type\": \"%s\",\n" % type2napi(result))
            ous.write("       \"arg_list\": [")
            first = True
            for p in params:
@@ -819,7 +849,7 @@ def mk_js(js_output_dir):
                k = t
                ous.write("            \"name\": \"%s\",\n" % "")                        # TBD
                ous.write("            \"c_type\": \"%s\",\n" % type2str(t))
-               ous.write("            \"napi_type\": \"%s\",\n" % type2napi(t))        
+               ous.write("            \"napi_type\": \"%s\",\n" % type2napi(t))
                ous.write("            \"napi_builder\": \"%s\"\n" % type2napibuilder(t))
                ous.write(  "         }")
            ous.write("],\n")
@@ -938,10 +968,15 @@ def error(msg):
 
 next_id = 0
 API2Id = {}
+SPECIAL_NATIVE_API = set()
 
-def def_API(name, result, params):
+
+def def_API(name, result, params, has_special_native_impl=False):
+    global SPECIAL_NATIVE_API
     global API2Id, next_id
     global log_h, log_c
+    if has_special_native_impl:
+        SPECIAL_NATIVE_API.add(name)
     mk_py_binding(name, result, params)
     reg_dotnet(name, result, params)
     API2Id[next_id] = name
@@ -995,7 +1030,7 @@ def def_API(name, result, params):
                 exe_c.write("in.get_bool(%s)" % i)
             elif ty == VOID_PTR:
                 log_c.write("  P(0);\n")
-                exe_c.write("in.get_obj_addr(%s)" % i)                
+                exe_c.write("in.get_obj_addr(%s)" % i)
             elif ty == PRINT_MODE or ty == ERROR_CODE:
                 log_c.write("  U(static_cast<unsigned>(a%s));\n" % i)
                 exe_c.write("static_cast<%s>(in.get_uint(%s))" % (type2str(ty), i))
@@ -1748,7 +1783,7 @@ del _default_dirs
 del _all_dirs
 del _ext
 """)
-    
+
 def write_core_py_preamble(core_py):
   core_py.write(
 """
@@ -1886,6 +1921,8 @@ def generate_files(api_files,
                    dotnet_output_dir=None,
                    java_output_dir=None,
                    java_package_name=None,
+                   java_special_native_dir=None,
+                   java_native_library_name=None,
                    js_output_dir=None,
                    ml_output_dir=None,
                    ml_src_dir=None):
@@ -1959,9 +1996,9 @@ def generate_files(api_files,
       mk_dotnet_wrappers(dotnet_file)
       if mk_util.is_verbose():
         print("Generated '{}'".format(dotnet_file.name))
-        
+
   if java_output_dir:
-    mk_java(java_output_dir, java_package_name)
+    mk_java(java_output_dir, java_package_name, java_special_native_dir, java_native_library_name)
 
   if ml_output_dir:
     assert not ml_src_dir is None
@@ -2007,6 +2044,14 @@ def main(args):
                       dest="js_output_dir",
                       default=None,
                       help="Directory to emit js bindings. If not specified no files are emitted.")
+  parser.add_argument("--java-special-native-dir",
+                      dest='java_special_native_dir',
+                      default=None,
+                      help="Directory to search for special native impls.")
+  parser.add_argument("--java-native-library-name",
+                      dest='java_native_library_name',
+                      default='z3java',
+                      help="Java native library name.")
   pargs = parser.parse_args(args)
 
   if pargs.java_output_dir:
@@ -2030,6 +2075,8 @@ def main(args):
                  dotnet_output_dir=pargs.dotnet_output_dir,
                  java_output_dir=pargs.java_output_dir,
                  java_package_name=pargs.java_package_name,
+                 java_special_native_dir=pargs.java_special_native_dir,
+                 java_native_library_name=pargs.java_native_library_name,
                  js_output_dir=pargs.js_output_dir,
                  ml_output_dir=pargs.ml_output_dir,
                  ml_src_dir=pargs.ml_src_dir)

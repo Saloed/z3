@@ -26,6 +26,7 @@ z3_add_component(transforms
     dl_mk_array_instantiation.cpp
     dl_mk_elim_term_ite.cpp
     dl_mk_synchronize.cpp
+    dl_mk_function_call_normalize.cpp
   COMPONENT_DEPENDENCIES
     dataflow
     hilbert
